@@ -609,7 +609,7 @@ air_drag <-  collapsed %>%
   ) %>%
   group_by(id,label) %>%
   filter(abs(terror) < 1,
-         abs(xerror) < 2) %>%
+         abs(xerror) < 2) %>
   filter(trim(terror, filter = T)) %>%
   filter(trim(xerror, filter = T))
 
