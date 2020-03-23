@@ -61,7 +61,7 @@ air_drag <-  collapsed %>%
          ball = factor(ball,levels = c("tennis","basket"),
                        labels = c("Tennis","Basket")),
          airdrag = case_when(air_drag == 1 ~ "Airdrag",
-                             air_drag == 0 ~ "No Airdrag"))
+                             air_drag == 0 ~ "NoAirdrag"))
 
 nAllTrials = length(air_drag$trial)
 
@@ -96,9 +96,9 @@ anova(H1_Temporal_lmer,H1_Temporal_lmer_NullModel)
 summary(H1_Temporal_lmer_NullModel)
 
 H1_Temporal_lmer <- lmer(terrorratio-1 ~ 0 + (1|id), 
-                         data = air_drag[air_drag$airdrag == "No Airdrag",])
+                         data = air_drag[air_drag$airdrag == "NoAirdrag",])
 H1_Temporal_lmer_NullModel <- lmer(terrorratio-1 ~ (1|id), 
-                                   data = air_drag[air_drag$airdrag == "No Airdrag",])
+                                   data = air_drag[air_drag$airdrag == "NoAirdrag",])
 anova(H1_Temporal_lmer,H1_Temporal_lmer_NullModel)
 summary(H1_Temporal_lmer_NullModel)
 
@@ -147,9 +147,9 @@ anova(H1_Temporal_lmer,H1_Temporal_lmer_NullModel)
 summary(H1_Temporal_lmer_NullModel)
 
 H1_Temporal_lmer <- lmer(xerrorratio-1 ~ 0 + (1|id), 
-                         data = air_drag[air_drag$airdrag == "No Airdrag",])
+                         data = air_drag[air_drag$airdrag == "NoAirdrag",])
 H1_Temporal_lmer_NullModel <- lmer(xerrorratio-1 ~ (1|id), 
-                                   data = air_drag[air_drag$airdrag == "No Airdrag",])
+                                   data = air_drag[air_drag$airdrag == "NoAirdrag",])
 anova(H1_Temporal_lmer,H1_Temporal_lmer_NullModel)
 summary(H1_Temporal_lmer_NullModel)
 
