@@ -38,9 +38,9 @@ Continuous <- read.table(file = "Data/ContinuousData.txt", header = T)
 air_drag <-  collapsed %>%
   select(trial,x_max,y_max,t_max,vx,
          x_max_model,t_max_model,y_max_model,
-         G,ball,cond_size,r,air_drag,label,
+         G,ball,condsize,r,air_drag,label,
          random_x,rtime_timing,rtime_spatial,ball_x_spatial,ball_x_timing,
-         id,TTC,cond_size,visible) %>%
+         id,TTC,condsize,visible) %>%
   # Raw differneces
   mutate(terror = rtime_timing-t_max-0.049,
          xerror = ball_x_spatial - x_max,
@@ -56,13 +56,13 @@ air_drag <-  collapsed %>%
          # Ratio Model -
          xerror_ratio_model = xerror_model / x_max_model,
          terror_ratio_model = terror_model / t_max_model,
-         cond_size = factor(cond_size,levels = c("cong","incongr"),
+         condsize = factor(condsize,levels = c("cong","incongr"),
                             labels = c("Congruent","Incongruent")),
          ball = factor(ball,levels = c("tennis","basket"),
                        labels = c("Tennis","Basket")),
          airdrag = case_when(air_drag == 1 ~ "Airdrag",
                              air_drag == 0 ~ "No Airdrag"))
-2.8/3.5
+
 nAllTrials = length(air_drag$trial)
 
 air_drag = air_drag %>% 
@@ -78,7 +78,7 @@ air_drag = air_drag %>%
 nAllTrials - length(air_drag$trial)
 
 #####Look at airdrag and stuff
-ggplot(air_drag[air_drag$cond_size == "Congruent",], aes(airdrag,terrorratio)) +
+ggplot(air_drag[air_drag$condsize == "Congruent",], aes(airdrag,terrorratio)) +
   geom_violin()
 
 H1_Temporal_lmer <- lmer(terrorratio ~ airdrag + (1|id), 
@@ -127,7 +127,7 @@ Hypotheses = hypothesis(fit2,c("airdragNoAirdrag < 0",
                                "Intercept = 1",
                                "Intercept+airdragNoAirdrag = 1"))
 
-ggplot(air_drag, aes(as.factor(cond_size),t_max_model-t_max, color = as.factor(air_drag))) +
+ggplot(air_drag, aes(as.factor(condsize),t_max_model-t_max, color = as.factor(air_drag))) +
   geom_point() +
   facet_grid(.~ball)
 
@@ -154,7 +154,7 @@ anova(H1_Temporal_lmer,H1_Temporal_lmer_NullModel)
 summary(H1_Temporal_lmer_NullModel)
 
 
-ggplot(air_drag,aes(terrorratio,xerrorratio, color = cond_size)) +
+ggplot(air_drag,aes(terrorratio,xerrorratio, color = condsize)) +
   geom_point(alpha=0.2) +
   coord_fixed() +
   geom_smooth() +
@@ -163,26 +163,26 @@ ggplot(air_drag,aes(terrorratio,xerrorratio, color = cond_size)) +
 
 ######Look at ball size and congruency
 ##time
-ggplot(air_drag, aes(cond_size,terror_ratio, color = ball)) +
+ggplot(air_drag, aes(condsize,terror_ratio, color = ball)) +
   geom_violin() +
   binomial_smooth()
 
 
-SizeCongruency_TestModel_Time <- lmer(terrorratio ~ ball*cond_size + (1|id), 
+SizeCongruency_TestModel_Time <- lmer(terrorratio ~ ball*condsize + (1|id), 
                          data = air_drag[air_drag$airdrag == "Airdrag",])
-SizeCongruency_NullModel_Time <- lmer(terrorratio ~ ball + cond_size + (1|id), 
+SizeCongruency_NullModel_Time <- lmer(terrorratio ~ ball + condsize + (1|id), 
                                       data = air_drag[air_drag$airdrag == "Airdrag",])
 anova(SizeCongruency_TestModel_Time,SizeCongruency_NullModel_Time)
 summary(SizeCongruency_TestModel_Time)
 #(lol) (jaja)
 
 ##space
-ggplot(air_drag, aes(ball,xerrorratio, color = cond_size)) +
+ggplot(air_drag, aes(ball,xerrorratio, color = condsize)) +
   geom_violin() +
   geom_boxplot()
-SizeCongruency_TestModel_Space <- lmer(xerror_ratio ~ ball*cond_size + (1|id), 
+SizeCongruency_TestModel_Space <- lmer(xerror_ratio ~ ball*condsize + (1|id), 
                                        data = air_drag[air_drag$airdrag == "Airdrag",])
-SizeCongruency_NullModel_Space <- lmer(xerror_ratio ~ ball + cond_size + (1|id), 
+SizeCongruency_NullModel_Space <- lmer(xerror_ratio ~ ball + condsize + (1|id), 
                                        data = air_drag[air_drag$airdrag == "Airdrag",])
 anova(SizeCongruency_TestModel_Space,SizeCongruency_NullModel_Space)
 summary(SizeCongruency_TestModel_Space)
@@ -257,7 +257,7 @@ Hypotheses = hypothesis(fit2,c("sigma_airdragNoAirdrag > 0"))
 
 
 air_drag %>%
-  group_by(ball,cond_size) %>%
+  group_by(ball,condsize) %>%
   mutate(Variability_Time = sd(terror_ratio),
          Variability_Space = sd(xerror_ratio)) %>%
   slice(1) %>%
