@@ -1,11 +1,3 @@
-require(rstan)
-require(brms)
-
-#####optimize setup for Bayesian Linear Models (rstan/brms)
-options(mc.cores = parallel::detectCores())
-rstan_options(auto_write = TRUE)
-Sys.setenv(LOCAL_CPPFLAGS = '-march=corei7')
-
 libraries <- c("cowplot","tidyverse","grid","gridExtra","lme4","lmerTest","ggpubr","apastats","rstatix")
 # Where is this script?
 invisible(lapply(libraries, function(x) {
@@ -16,6 +8,15 @@ invisible(lapply(libraries, function(x) {
 }
 ))
 rm(libraries)
+
+require(rstan)
+require(brms)
+require(Hmisc)
+
+#####optimize setup for Bayesian Linear Models (rstan/brms)
+options(mc.cores = parallel::detectCores())
+rstan_options(auto_write = TRUE)
+Sys.setenv(LOCAL_CPPFLAGS = '-march=corei7')
 
 Where_Am_I <- function(path=T){
   if (path == T){
@@ -38,15 +39,17 @@ Continuous <- read.table(file = "Data/ContinuousData.txt", header = T)
 air_drag <-  collapsed %>%
   select(trial,x_max,y_max,t_max,vx,
          x_max_model,t_max_model,y_max_model,
-         G,ball,condsize,r,air_drag,label,
+         G,ball,cond_size,r,air_drag,label,
          random_x,rtime_timing,rtime_spatial,ball_x_spatial,ball_x_timing,
-         id,TTC,condsize,visible) %>%
+         id,TTC,visible) %>%
   # Raw differneces
   mutate(terror = rtime_timing-t_max-0.049,
          xerror = ball_x_spatial - x_max,
          OccludedDuration = t_max-visible,
          OccludedPercentage = visible/t_max,
-         OccludedDistance = x_max-(x_max/2+vx*0.8*t_max*(OccludedPercentage-0.5)),
+         OccludedDistance = case_when(
+           air_drag == 1 ~ x_max-(x_max/2+vx*0.8*t_max*(OccludedPercentage-0.5)), #vx is down to 80% of the original speed in air drag condition
+           air_drag == 0 ~ x_max-(x_max/2+vx*t_max*(OccludedPercentage-0.5))),
          # Differences with model modelling AD at oclusion
          xerror_model = ball_x_spatial - x_max_model,
          terror_model = rtime_timing-t_max_model-0.049,
@@ -56,7 +59,7 @@ air_drag <-  collapsed %>%
          # Ratio Model -
          xerror_ratio_model = xerror_model / x_max_model,
          terror_ratio_model = terror_model / t_max_model,
-         condsize = factor(condsize,levels = c("cong","incongr"),
+         condsize = factor(cond_size,levels = c("cong","incongr"),
                             labels = c("Congruent","Incongruent")),
          ball = factor(ball,levels = c("tennis","basket"),
                        labels = c("Tennis","Basket")),
@@ -72,7 +75,11 @@ air_drag = air_drag %>%
   filter(trim(terror, filter = T)) %>%
   filter(trim(xerror, filter = T)) %>%
   mutate(sd_time = sd(terror),
-         sd_space = sd(xerror))
+         sd_space = sd(xerror),
+         Median_terror = median(terror),
+         Median_xerror = median(xerror),
+         SD_Ratio_t = sd(terror)/(OccludedDuration + Median_terror),
+         SD_Ratio_x = sd(terror)/(OccludedDistance + Median_xerror))
 
 #number of excluded trials
 nAllTrials - length(air_drag$trial)
@@ -104,28 +111,7 @@ summary(H1_Temporal_lmer_NullModel)
 
 
 
-get_prior(terrorratio ~ airdrag + (1|id),
-          data = air_drag, family = gaussian())
 
-fit1 <- brm(bf(terrorratio ~ airdrag + (1|id), 
-               sigma ~ airdrag + (1|id)),
-            data = air_drag, family = gaussian(),prior = set_prior("normal(1,10)", class = "b"))
-fit1$prior
-fit$prior
-plot(Hypotheses)
-
-Hypotheses = hypothesis(fit1,c("airdragNoAirdrag < 0",
-                               "sigma_airdragNoAirdrag < 0",
-                               "abs(Intercept-1) > abs(Intercept+airdragNoAirdrag-1)"))
-
-fit2 <- brm(bf(xerrorratio ~ airdrag + (1|id), 
-               sigma ~ airdrag + (1|id)),
-            data = air_drag, family = gaussian())
-
-Hypotheses = hypothesis(fit2,c("airdragNoAirdrag < 0",
-                               "sigma_airdragNoAirdrag < 0",
-                               "Intercept = 1",
-                               "Intercept+airdragNoAirdrag = 1"))
 
 ggplot(air_drag, aes(as.factor(condsize),t_max_model-t_max, color = as.factor(air_drag))) +
   geom_point() +
@@ -180,6 +166,7 @@ summary(SizeCongruency_TestModel_Time)
 ggplot(air_drag, aes(ball,xerrorratio, color = condsize)) +
   geom_violin() +
   geom_boxplot()
+
 SizeCongruency_TestModel_Space <- lmer(xerror_ratio ~ ball*condsize + (1|id), 
                                        data = air_drag[air_drag$airdrag == "Airdrag",])
 SizeCongruency_NullModel_Space <- lmer(xerror_ratio ~ ball + condsize + (1|id), 
@@ -251,8 +238,21 @@ Hypotheses = hypothesis(fit8,c("sigma_ballTennis < 0"))
 
 
 ######exploratory impact of air drag on
-Hypotheses = hypothesis(fit1,c("sigma_airdragNoAirdrag > 0"))
-Hypotheses = hypothesis(fit2,c("sigma_airdragNoAirdrag > 0"))
+
+H1_Spatial_TestModel <- lmer(terrorratio ~ ball + (1|id), 
+                             data = air_drag)
+H1_Spatial_NullModel <- lmer(terrorratio ~ (1|id), 
+                             data = air_drag)
+anova(H1_Spatial_TestModel,H1_Spatial_NullModel)
+summary(H1_Spatial_TestModel)
+
+
+H1_Spatial_TestModel <- lmer(xerrorratio ~ ball + (1|id), 
+                             data = air_drag)
+H1_Spatial_NullModel <- lmer(xerrorratio ~ (1|id), 
+                             data = air_drag)
+anova(H1_Spatial_TestModel,H1_Spatial_NullModel)
+summary(H1_Spatial_TestModel)
 
 
 
@@ -268,51 +268,6 @@ ggplot(air_drag, aes(terror_ratio,xerror_ratio, color = ball)) +
   geom_smooth()
 
 
-
-
-?set_prior
-
-
-## Not run: 
-## define priors
-prior <- c(set_prior("normal(0,2)", class = "b"),
-           set_prior("student_t(10,0,1)", class = "sigma"),
-           set_prior("student_t(10,0,1)", class = "sd"))
-?set_prior
-## fit a linear mixed effects models
-fit <- brm(time ~ age + sex + disease + (1 + age|patient),
-           data = kidney, family = lognormal(),
-           prior = prior, sample_prior = "yes", 
-           control = list(adapt_delta = 0.95))
-
-## perform two-sided hypothesis testing
-(hyp1 <- hypothesis(fit, "sexfemale = age + diseasePKD"))
-plot(hyp1)
-hypothesis(fit, "exp(age) - 3 = 0", alpha = 0.01)
-?hypothesis
-## perform one-sided hypothesis testing
-hypothesis(fit, "diseasePKD + diseaseGN - 3 < 0")
-
-hypothesis(fit, "age < Intercept", 
-           class = "sd", group  = "patient")
-
-## test the amount of random intercept variance on all variance
-h <- paste("sd_patient__Intercept^2 / (sd_patient__Intercept^2 +",
-           "sd_patient__age^2 + sigma^2) = 0")
-(hyp2 <- hypothesis(fit, h, class = NULL))
-plot(hyp2)
-
-## test more than one hypothesis at once
-h <- c("diseaseGN = diseaseAN", "2 * diseaseGN - diseasePKD = 0")
-(hyp3 <- hypothesis(fit, h))
-plot(hyp3, ignore_prior = TRUE)
-
-## compute hypotheses for all levels of a grouping factor
-hypothesis(fit, "age = 0", scope = "coef", group = "patient")
-
-## use the default method
-dat <- as.data.frame(fit)
-hypothesis(dat, "b_age > 0")
 
 ## End(Not run)
 roh = 1.225
@@ -335,3 +290,120 @@ for (i in seq(0,1.4*0.575,0.01)){
   print(i)
 }
 
+
+
+
+
+
+
+
+
+# =============================================================================
+# Response variability, errors and conditions
+# =============================================================================
+air_drag_sum <- air_drag %>%
+  group_by(TTC,vx,id,air_drag,ball,cond_size) %>%
+  mutate(sd_timing = sd(terror),
+            sd_spatial = sd(xerror),
+            visible = mean(visible),
+            terror_ratio = mean(terrorratio),
+            xerror_ratio = mean(xerrorratio),
+            ratio_t = sd_timing/mean(OccludedDuration+terror),
+            ratio_x = sd_spatial/mean(OccludedDistance + xerror),
+            #xerror_t_ratio = mean(ball_x_spatial)/mean(x_max),
+            t_max = mean(t_max),
+            x_max = mean(x_max),
+            terror = mean(terror),
+            xerror= mean(xerror))
+
+air_drag_participant <- air_drag_sum %>%
+  group_by(id) %>%
+  summarize_all(.funs = "mean")
+
+air_drag_ratios <- air_drag_sum %>%
+  ungroup() %>%
+  select(-id,-cond_size,-ball) %>%
+  summarize_all(.funs = "mean")
+
+
+
+mean_ratio_sd_air_Drag <- air_drag_sum %>%
+  group_by(id) %>%
+  mutate(max_xerror = mean_cl_normal(ratio_x)$ymax,
+            min_xerror = mean_cl_normal(ratio_x)$ymin,
+            ratio_x = mean_cl_normal(ratio_x)$y,
+            max_terror = mean_cl_normal(ratio_t)$ymax,
+            min_terror = mean_cl_normal(ratio_t)$ymin,
+            ratio_t = mean_cl_normal(ratio_t)$y)
+
+
+# =============================================================================
+# a) Timing: Variability ratio vs. error ratio 
+# =============================================================================
+ggplot(air_drag_sum,aes(terror_ratio,ratio_t,fill = id)) + 
+  geom_abline(linetype = 2) +
+  geom_point(alpha = 0.25, shape = 21) + 
+  geom_point(data= air_drag_participant, size = 3, shape = 21) +
+  stat_cor(data = air_drag_participant, aes(group = 0)) + 
+  labs(x = expression(rt/t[max]),
+       y = expression(sigma[t]/t[max]),
+       color = NULL) + 
+  guides(fill = F) +
+  scale_fill_viridis_d()
+
+# =============================================================================
+# b) Spatial: Variability ratio vs. error ratio 
+# =============================================================================
+
+ggplot(air_drag_sum,aes(xerror_ratio,ratio_x,fill = id)) + 
+  geom_abline(linetype = 2) +
+  geom_point(alpha = 0.25, shape = 21) + 
+  geom_point(data= air_drag_participant, size = 3, shape = 21) +
+  stat_cor(data = air_drag_participant, aes(group = 0)) + 
+  labs(x = expression(rx/x[max]),
+       y = expression(sigma[x]/x[max]),
+       color = NULL) + 
+  guides(fill = F) +
+  scale_fill_viridis_d() 
+
+# =============================================================================
+# c) Timing variability ratio vs. Spatial variability ratio
+# =============================================================================
+
+ggplot(air_drag_sum,aes(ratio_x,ratio_t,fill = id)) + 
+  geom_abline(linetype = 2) + 
+  geom_point(alpha = 0.25, shape = 21) + 
+  geom_point(data= air_drag_participant, size = 3, shape = 21) +
+  ggpubr::stat_cor(aes(group = 0))+ 
+  labs(title = paste0("Spatial ratio: ", round( air_drag_ratios$ratio_x[1],3),
+                      "\nTemporal ratio: ", round( air_drag_ratios$ratio_t[1],3)),
+       x = expression(sigma[x]/x[max]),
+       y = expression(sigma[t]/t[max]),
+       color = NULL) + 
+  scale_fill_viridis_d() +
+  guides(fill = FALSE) +
+  # geom_errorbarh(data = mean_ratio_sd_air_Drag, 
+  #                aes(x = ratio_x,
+  #                    xmax = max_xerror,   
+  #                    xmin = min_xerror)) +   
+  # geom_errorbar(data = mean_ratio_sd_air_Drag,aes(y = ratio_t,
+  #                    ymax = max_terror,
+  #                    ymin = min_terror)) +
+  theme_minimal(12)
+
+
+# =============================================================================
+# c) Terror ratio vs. Xerror ratio
+# =============================================================================
+ggplot(air_drag_sum  ,aes(xerror_ratio,terror_ratio,fill = id)) + 
+  geom_abline(linetype = 2) + 
+  geom_point(alpha = 0.25, shape = 21) + 
+  geom_point(data= air_drag_participant, size = 3, shape = 21) +
+  ggpubr::stat_cor(aes(group = 0))+ 
+  labs(x = expression(r[x]/x[max]),
+       y = expression(r[t]/t[max]),
+       color = NULL) + 
+  scale_fill_viridis_d() +
+  #guides(fill = FALSE) +
+  #facet_wrap(~id) +
+  theme_minimal(12)

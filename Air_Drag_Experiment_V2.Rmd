@@ -39,7 +39,7 @@ scale_color_discrete <- function(...) {
 scale_fill_discrete <- function(...) {
   ggthemes::scale_fill_colorblind(...)
 }
-source("Funs.R")
+source("Utilities/Funs.R")
 
 ```
 
@@ -577,7 +577,7 @@ set.seed(80085)
 # library(dplyr)
 # write.table(x = collapsed,file = "All_Data_Air_Drag.txt")
 # write.table(x = collapsed %>% mutate_if(is.numeric, round, digits=4), file =  "All_Data_Air_Drag.txt")
-collapsed <- read.table(file = "All_Data_Air_Drag", header = T)
+collapsed <- read.table(file = "Data/All_Data_Air_Drag.txt", header = T)
 
 # =============================================================================
 # Obtain VD's such as errors and ratios
@@ -609,7 +609,7 @@ air_drag <-  collapsed %>%
   ) %>%
   group_by(id,label) %>%
   filter(abs(terror) < 1,
-         abs(xerror) < 2) %>
+         abs(xerror) < 2) %>%
   filter(trim(terror, filter = T)) %>%
   filter(trim(xerror, filter = T))
 
@@ -912,7 +912,7 @@ ggplot(air_drag_sum,aes(terror_ratio,ratio_t,fill = id)) +
        y = expression(sigma[t]/t[max]),
        color = NULL) + 
   guides(fill = F) +
-  scale_fill_viridis_d() 
+  scale_fill_viridis_d()
 
 # =============================================================================
 # b) Spatial: Variability ratio vs. error ratio 
