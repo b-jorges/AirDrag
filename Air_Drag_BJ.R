@@ -296,29 +296,28 @@ for (i in seq(0,1.4*0.575,0.01)){
 
 
 
-
-
 # =============================================================================
 # Response variability, errors and conditions
 # =============================================================================
 air_drag_sum <- air_drag %>%
   group_by(TTC,vx,id,air_drag,ball,cond_size) %>%
   mutate(sd_timing = sd(terror),
-            sd_spatial = sd(xerror),
-            visible = mean(visible),
-            terror_ratio = mean(terrorratio),
-            xerror_ratio = mean(xerrorratio),
-            ratio_t = sd_timing/mean(OccludedDuration+terror),
-            ratio_x = sd_spatial/mean(OccludedDistance + xerror),
-            #xerror_t_ratio = mean(ball_x_spatial)/mean(x_max),
-            t_max = mean(t_max),
-            x_max = mean(x_max),
-            terror = mean(terror),
-            xerror= mean(xerror))
+         sd_spatial = sd(xerror),
+         visible = mean(visible),
+         terrorratio = mean(terrorratio),
+         xerrorratio = mean(xerrorratio),
+         SDratio_t = sd_timing/mean(t_max),
+         SDratio_x = sd_spatial/mean(x_max),
+         #xerror_t_ratio = mean(ball_x_spatial)/mean(x_max),
+         t_max = mean(t_max),
+         x_max = mean(x_max),
+         terror = mean(terror),
+         xerror= mean(xerror)) 
 
 air_drag_participant <- air_drag_sum %>%
   group_by(id) %>%
   summarize_all(.funs = "mean")
+
 
 air_drag_ratios <- air_drag_sum %>%
   ungroup() %>%
@@ -326,16 +325,28 @@ air_drag_ratios <- air_drag_sum %>%
   summarize_all(.funs = "mean")
 
 
-
 mean_ratio_sd_air_Drag <- air_drag_sum %>%
   group_by(id) %>%
-  mutate(max_xerror = mean_cl_normal(ratio_x)$ymax,
-            min_xerror = mean_cl_normal(ratio_x)$ymin,
-            ratio_x = mean_cl_normal(ratio_x)$y,
-            max_terror = mean_cl_normal(ratio_t)$ymax,
-            min_terror = mean_cl_normal(ratio_t)$ymin,
-            ratio_t = mean_cl_normal(ratio_t)$y)
+  mutate(max_xerror = mean_cl_normal(SDratio_x)$ymax,
+         min_xerror = mean_cl_normal(SDratio_x)$ymin,
+         ratio_x = mean_cl_normal(SDratio_x)$y,
+         max_terror = mean_cl_normal(SDratio_t)$ymax,
+         min_terror = mean_cl_normal(SDratio_t)$ymin,
+         ratio_t = mean_cl_normal(SDratio_t)$y)
 
+
+
+air_drag_VariabilityvsBias <- air_drag_sum %>%
+  group_by(TTC,vx,id,air_drag,ball,cond_size) %>%
+  slice(1)
+
+H1_Spatial_TestModel <- lmer(terrorratio ~ SDratio_t + (1|TTC), 
+                             data = air_drag_VariabilityvsBias)
+H1_Spatial_NullModel <- lmer(terrorratio ~ (1|TTC), 
+                             data = air_drag_VariabilityvsBias)
+anova(H1_Spatial_TestModel,H1_Spatial_NullModel)
+summary(H1_Spatial_TestModel)
+plot(H1_Spatial_TestModel)
 
 # =============================================================================
 # a) Timing: Variability ratio vs. error ratio 

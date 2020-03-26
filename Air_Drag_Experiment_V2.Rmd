@@ -864,7 +864,7 @@ ggplot(air_drag %>%
 # =============================================================================
 air_drag_sum <- air_drag %>%
   group_by(TTC,vx,id,air_drag,ball,cond_size) %>%
-  summarize(sd_timing = sd(rtime_timing),
+  mutate(sd_timing = sd(rtime_timing),
             sd_spatial = sd(ball_x_spatial),
             visible = mean(visible),
             terror_ratio = mean(rtime_timing)/mean(t_max),
@@ -891,7 +891,7 @@ air_drag_ratios <- air_drag_sum %>%
 
 mean_ratio_sd_air_Drag <- air_drag_sum %>%
   group_by(id) %>%
-  summarize(max_xerror = mean_cl_normal(ratio_x)$ymax,
+  mutate(max_xerror = mean_cl_normal(ratio_x)$ymax,
             min_xerror = mean_cl_normal(ratio_x)$ymin,
             ratio_x = mean_cl_normal(ratio_x)$y,
             max_terror = mean_cl_normal(ratio_t)$ymax,
