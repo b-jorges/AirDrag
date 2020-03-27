@@ -262,6 +262,15 @@ Hypotheses = hypothesis(fit4,c("sigma_condsizeIncongruent < 0"))
 
 ###Do different ballsizes elicit differences in conditions?
 #variability
+#quick visualization:
+ggplot(air_drag, aes(as.factor(r),terrorratio)) +
+  geom_violin() +
+  geom_boxplot()
+
+ggplot(air_drag, aes(as.factor(r),xerrorratio)) +
+  geom_violin() +
+  geom_boxplot()
+
 fit5 <- brm(bf(terrorratio ~ as.factor(r) + (1|id),
                sigma ~ ball + (1|id)),
             data = air_drag, family = gaussian())
@@ -678,8 +687,8 @@ mean_ratio_sd_air_Drag <- air_drag_sum %>%
 Figure10a = ggplot(air_drag_sum,aes(terrorratio,SDratio_t,fill = id)) + 
   geom_point(alpha = 0.025, shape = 21) + 
   geom_point(data= air_drag_participant, size = 5, shape = 21) +
-  labs(x = expression("Error Ratio (s)"),
-       y = expression("Normalized SD (s)"),
+  labs(x = expression("Error Ratio Timing"),
+       y = expression("Normalized SD Timing"),
        color = NULL) +
   guides(fill = F) +
   scale_fill_viridis_d()
@@ -691,15 +700,15 @@ Figure10a = ggplot(air_drag_sum,aes(terrorratio,SDratio_t,fill = id)) +
 Figure10b = ggplot(air_drag_sum,aes(xerrorratio,SDratio_x,fill = id)) + 
   geom_point(alpha = 0.025, shape = 21) + 
   geom_point(data= air_drag_participant, size = 5, shape = 21) +
-  labs(x = expression("Error Ratio (m)"),
-       y = expression("Normalized SD (m)"),
+  labs(x = expression("Error Ratio Space"),
+       y = expression("Normalized SD Space"),
        color = NULL) +
   guides(fill = F) +
   scale_fill_viridis_d() +
   coord_cartesian(ylim = c(0,0.4), xlim = c(0.4,1.4))
 
 plot_grid(Figure10a,Figure10b, labels = "AUTO")
-ggsave("Figure10.jpg", w = 12, h = 6)
+ggsave("Figure06.jpg", w = 12, h = 6)
 # =============================================================================
 # c) Timing variability ratio vs. Spatial variability ratio
 # =============================================================================
