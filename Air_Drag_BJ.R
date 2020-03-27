@@ -306,8 +306,8 @@ air_drag_sum <- air_drag %>%
          visible = mean(visible),
          terrorratio = mean(terrorratio),
          xerrorratio = mean(xerrorratio),
-         SDratio_t = sd_timing/mean(t_max),
-         SDratio_x = sd_spatial/mean(x_max),
+         SDratio_t = sd_timing/mean(OccludedDuration),
+         SDratio_x = sd_spatial/mean(OccludedDistance),
          #xerror_t_ratio = mean(ball_x_spatial)/mean(x_max),
          t_max = mean(t_max),
          x_max = mean(x_max),
@@ -340,13 +340,49 @@ air_drag_VariabilityvsBias <- air_drag_sum %>%
   group_by(TTC,vx,id,air_drag,ball,cond_size) %>%
   slice(1)
 
-H1_Spatial_TestModel <- lmer(terrorratio ~ SDratio_t + (1|TTC), 
+H1_Spatial_TestModel <- lm(terrorratio ~ SDratio_t, 
                              data = air_drag_VariabilityvsBias)
-H1_Spatial_NullModel <- lmer(terrorratio ~ (1|TTC), 
+summary(H1_Spatial_TestModel)
+
+H1_Spatial_TestModel <- lm(xerrorratio ~ SDratio_x, 
+                           data = air_drag_VariabilityvsBias)
+summary(H1_Spatial_TestModel)
+
+H1_Spatial_TestModel <- lmer(terrorratio ~ SDratio_t + (1|id), 
+                             data = air_drag_VariabilityvsBias)
+H1_Spatial_NullModel <- lmer(terrorratio ~  (1|id), 
                              data = air_drag_VariabilityvsBias)
 anova(H1_Spatial_TestModel,H1_Spatial_NullModel)
 summary(H1_Spatial_TestModel)
-plot(H1_Spatial_TestModel)
+
+H1_Spatial_TestModel <- lmer(xerrorratio ~ SDratio_x + (1|id), 
+                             data = air_drag_VariabilityvsBias)
+H1_Spatial_NullModel <- lmer(terrorratio ~  (1|id), 
+                             data = air_drag_VariabilityvsBias)
+anova(H1_Spatial_TestModel,H1_Spatial_NullModel)
+summary(H1_Spatial_TestModel)
+
+H1_Spatial_TestModel <- lmer(terrorratio ~ SDratio_t + (1|label), 
+                             data = air_drag_VariabilityvsBias)
+H1_Spatial_NullModel <- lmer(terrorratio ~  (1|label), 
+                             data = air_drag_VariabilityvsBias)
+anova(H1_Spatial_TestModel,H1_Spatial_NullModel)
+coef(H1_Spatial_NullModel)
+
+H1_Spatial_TestModel <- lmer(xerrorratio ~ SDratio_x + (1|label), 
+                             data = air_drag_VariabilityvsBias)
+H1_Spatial_NullModel <- lmer(terrorratio ~  (1|label), 
+                             data = air_drag_VariabilityvsBias)
+anova(H1_Spatial_TestModel,H1_Spatial_NullModel)
+summary(H1_Spatial_TestModel)
+
+fit9 <- brm(bf(terrorratio ~ SDratio_t + (1|label),
+               sigma ~ SDratio_t + (1|label)),
+            data = air_drag_VariabilityvsBias, family = gaussian())
+
+fit10 <- brm(bf(terrorratio ~ SDratio_t + (1|label),
+               sigma ~ SDratio_t + (1|label)),
+            data = air_drag_VariabilityvsBias, family = gaussian())
 
 # =============================================================================
 # a) Timing: Variability ratio vs. error ratio 
