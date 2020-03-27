@@ -375,6 +375,271 @@ hypothesis(fit8, "SDratio_t > 0")
 ####################################################################
 ############################Plots###################################
 ####################################################################
+
+
+Exp_Conds <- expand.grid(Xi = 0,
+                         Yi = 0,
+                         vx = c(3,3.5),
+                         vy = c(1,1.2,1.4)*9.807/2,
+                         ball = c("tennis","basket"),
+                         cond_size = c("cong","incongr"),
+                         air_drag = c(1,0), rho = 1.225,
+                         G = 9.807) %>%
+  mutate(m = ifelse(ball == "tennis",
+                    ifelse(cond_size == "cong",0.06,0.6),
+                    ifelse(ball == "basket",
+                           ifelse(cond_size == "cong",0.6,0.06),NA)),
+         r = ifelse(ball == "tennis",
+                    ifelse(cond_size == "cong",0.033,0.12),
+                    ifelse(ball == "basket",
+                           ifelse(cond_size == "cong",0.12,0.033),NA)),
+         TTC = vy * 2 /9.807, 
+         v = sqrt(vx^2+vy^2),
+         cd = ifelse(air_drag == 0, 0, 0.535),
+         id_TTC = paste0(ifelse(air_drag == 1, "Air_Drag_","Gravity_"),TTC),
+         id_cond = paste0(id_TTC,"_",ball,"_",cond_size),
+         id_exp = paste0(id_cond,"_vx_",vx), # Condition long identifier for experiment
+         label = 1:n()) # Condition identifier for experiment
+
+# =============================================================================
+# Experimental conditions with max values
+# =============================================================================
+Exp_Conds <- Exp_Conds %>%
+  group_by(air_drag,ball,cond_size,id_cond,m,r,rho,cd,TTC,id_TTC,v,G,vy,vx,Xi,Yi,id_exp,label) %>%
+  do(xy_drag(vh = .$vx, vv = .$vy,C = .$cd,
+             rho = .$rho,m = .$m,radius = .$r,
+             dt = 0.001,g = .$G,vectors = F)) %>%
+  mutate(x_max = max(x),
+            y_max = max(y),
+            t_max = max(t))
+
+
+# =============================================================================
+# Continuous
+# =============================================================================
+Continuous <- Exp_Conds %>%
+  group_by(air_drag,ball,cond_size,id_cond,m,r,rho,cd,TTC,id_TTC,v,G,vy,vx,Xi,Yi,id_exp,label,t_max) %>%
+  do(xy_drag_model(vh = vx, vv = vy,C = cd,
+                   rho = rho,m = m,radius = r,
+                   dt = 0.001,g = G,vectors = T))
+
+# =============================================================================
+# See experimental conditions with ggplot
+# =============================================================================
+# READ ME: if you want to see the proper figure download "setup.png" at root folder
+# =============================================================================
+try(image_setup <-  png::readPNG("Setup.png"))
+
+Temp_cont <- Continuous %>%
+  group_by(id_exp) %>%
+  mutate(cond_size = factor(cond_size,levels = c("cong","incongr"),labels = c("Congruent","Incongruent")),
+         ball = factor(ball,levels = c("tennis","basket"),labels = c("Tennis","Basket")),
+         air_drag = factor(air_drag,levels = c(0,1),labels = c("Gravity","Gravity + Air Drag")),
+         id_TTC = factor(id_TTC, levels = c("Air_Drag_1","Air_Drag_1.2", "Air_Drag_1.4",
+                                            "Gravity_1", "Gravity_1.2","Gravity_1.4"),
+                         labels = c("G + AD @ iTTC:1 (s)", "G + AD @ iTTC:1.2 (s)", "G + AD @ iTTC:1.4 (s)",
+                                    "G @ iTTC:1 (s)", "G @ iTTC:1.2 (s)", "G @ iTTC:1.4 (s)")))
+Temp_Exp_Conds <- Exp_Conds %>%
+  group_by(id_exp) %>%
+  mutate(cond_size = factor(cond_size,levels = c("cong","incongr"),labels = c("Congruent","Incongruent")),
+         ball = factor(ball,levels = c("tennis","basket"),labels = c("Tennis","Basket")),
+         air_drag = factor(air_drag,levels = c(0,1),labels = c("Gravity","Gravity + Air Drag")),
+         id_TTC = factor(id_TTC, levels = c("Air_Drag_1","Air_Drag_1.2", "Air_Drag_1.4",
+                                            "Gravity_1", "Gravity_1.2","Gravity_1.4"),
+                         labels = c("G + AD @ iTTC:1 (s)", "G + AD @ iTTC:1.2 (s)", "G + AD @ iTTC:1.4 (s)",
+                                    "G @ iTTC:1 (s)", "G @ iTTC:1.2 (s)", "G @ iTTC:1.4 (s)")))
+
+
+
+if (exists("image_setup")){
+  Setup_Plot <- plot_grid(
+    ggplot(Temp_cont %>% filter(ball == "Basket"),aes(x,y+0.7, group = label, color = v)) +
+      annotation_custom(rasterGrob(image_setup,
+                                   width = unit(1,"npc"),
+                                   height = unit(1,"npc")),
+                        -Inf, Inf, -Inf, Inf) +
+      geom_line() +
+      coord_cartesian(ylim=c(0,max(Temp_cont$y)+0.7),xlim=c(-0.25,5.5)) +
+      geom_line(data = Temp_cont %>%
+                  filter(round(t,3) > round(t_max*0.3,3), round(t,3) < round(t_max*0.6,3),
+                         ball == "Basket"), aes(x,y+0.7), color = "red") + 
+      labs(x = "x (m)",
+           y = "y (m)",
+           color = "Condition") + 
+      ggtitle(label =  "Experimental conditions",
+              subtitle = "Red section indicates random oclusion range") +
+      guides(color=FALSE)+
+      theme(panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank()),
+    plot_shared_legend(
+      ggplot(Temp_Exp_Conds,aes(TTC,t_max,color=factor(air_drag),shape=factor(cond_size))) +
+        geom_point() +
+        facet_wrap(~ball)+
+        labs(x = "TTC under no Air Drag",
+             y = "Real TTC",
+             color = "Acceleration Condition",
+             shape = "Ball size") + 
+        scale_color_discrete(), 
+      
+      ggplot(Temp_Exp_Conds,aes(TTC,x_max,color=factor(air_drag),shape=factor(cond_size))) +
+        geom_point() +
+        facet_wrap(~ball) +
+        labs(x = "TTC under no Air Drag",
+             y = expression(X[End])) + 
+        scale_color_discrete()
+    ),
+    nrow=2,rel_heights = c(0.6,0.4)
+  )
+} else{
+  Setup_Plot <- plot_grid(
+    ggplot(Temp_cont %>% filter(ball == "Basket"),aes(x,y+0.7, group = label, color = v)) +
+      geom_line() +
+      coord_cartesian(ylim=c(0,max(Temp_cont$y)+0.7),xlim=c(-0.25,5.5)) +
+      geom_line(data = Temp_cont %>% 
+                  filter(round(t,3) > round(t_max*0.55,3), round(t,3) < round(t_max*0.6,3), ball == "Basket"),
+                aes(x,y+0.7), color = "red") + 
+      labs(x = "x (m)",
+           y = "y (m)",
+           color = "Condition") + 
+      guides(color=FALSE)+
+      theme(panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank()),
+    plot_shared_legend(
+      ggplot(Temp_Exp_Conds,aes(TTC,t_max,color=factor(air_drag),shape=factor(cond_size))) +
+        geom_point() +
+        facet_wrap(~ball)+
+        labs(x = "TTC under no Air Drag",
+             y = "Real TTC",
+             color = "Acceleration Condition",
+             shape = "Ball size") + 
+        scale_color_discrete(), 
+      
+      ggplot(Temp_Exp_Conds,aes(TTC,x_max,color=factor(air_drag),shape=factor(cond_size))) +
+        geom_point() +
+        facet_wrap(~ball) +
+        labs(x = "TTC under no Air Drag",
+             y = expression(X[End])) + 
+        scale_color_discrete()
+    ),
+    nrow=2,rel_heights = c(0.6,0.4)
+  )
+}
+
+
+
+rm(Temp_cont,Temp_Exp_Conds,image_setup)
+Setup_Plot
+ggsave("Figure1 Experimental Conditions.jpg", w = 12, h = 8)
+
+
+######################Air drag###########################
+Figure2a = ggplot(air_drag, aes(airdrag,terrorratio,color = factor(airdrag))) +
+  geom_hline(linetype = 2, yintercept = 1) + 
+  geom_jitter(alpha = 0.025, width = 0.1) +
+  geom_flat_violin(size=1) + 
+  scale_color_discrete(name = "") + 
+  theme(legend.position = "none") + 
+#  stat_pvalue_manual(stat_test_t_b, label = "p.adj",color = "color_p") +
+  labs(x = NULL,
+       y = "Timing Error ratio") 
+
+Figure2b = ggplot(air_drag, aes(airdrag,xerrorratio,color = factor(airdrag))) +
+  geom_hline(linetype = 2, yintercept = 1) + 
+  geom_jitter(alpha = 0.025, width = 0.1) +
+  geom_flat_violin(size=1) + 
+  scale_color_discrete(name = "") + 
+  theme(legend.position = "none") + 
+  #  stat_pvalue_manual(stat_test_t_b, label = "p.adj",color = "color_p") +
+  labs(x = NULL,
+       y = "Spatial Error ratio") 
+
+plot_grid(Figure2a,Figure2b, labels = "AUTO")
+ggsave("Figure2.jpg", w = 12, h = 6)
+
+
+######################Congruency###########################
+air_drag = air_drag %>%
+  mutate(BallXCongruency = 
+           case_when(
+             condsize == "Congruent" & ball == "Tennis" ~ "Tennis, Congruent",
+             condsize == "Incongruent" & ball == "Tennis" ~ "Tennis, Incongruent",
+             condsize == "Congruent" & ball == "Basket" ~ "Basket, Congruent",
+             condsize == "Incongruent" & ball == "Basket" ~ "Basket, Incongruent",
+           )
+         )
+
+Figure3a = ggplot(air_drag, aes(BallXCongruency,terrorratio,color = as.factor(BallXCongruency))) +
+  geom_hline(linetype = 2, yintercept = 1) + 
+  geom_jitter(alpha = 0.025, width = 0.1) +
+  geom_flat_violin(size=1) + 
+  scale_color_manual(name = "", values = c(Red, LightRed, BlauUB, LightBlauUB)) + 
+  theme(legend.position = "") + 
+  labs(x = NULL,
+       y = "Timing Error ratio") 
+
+Figure3b = ggplot(air_drag, aes(BallXCongruency,xerrorratio,color = as.factor(BallXCongruency))) +
+  geom_hline(linetype = 2, yintercept = 1) + 
+  geom_jitter(alpha = 0.025, width = 0.1) +
+  geom_flat_violin(size=1) + 
+  scale_color_manual(name = "", values = c(Red, LightRed, BlauUB, LightBlauUB)) + 
+  theme(legend.position = "") + 
+  labs(x = NULL,
+       y = "Spatial Error ratio") 
+
+plot_grid(Figure3a,Figure3b, nrow = 2, labels = "AUTO")
+ggsave("Figure3.jpg", w = 12, h = 6)
+
+######################Congruency###########################
+Figure4a = ggplot(air_drag, aes(condsize,terrorratio,color = factor(condsize))) +
+  geom_hline(linetype = 2, yintercept = 1) + 
+  geom_jitter(alpha = 0.025, width = 0.1) +
+  geom_flat_violin(size=1) + 
+  scale_color_manual(name = "", values = c(Lila, Turquoise)) + 
+  theme(legend.position = "none") + 
+  #  stat_pvalue_manual(stat_test_t_b, label = "p.adj",color = "color_p") +
+  labs(x = NULL,
+       y = "Timing Error ratio") 
+
+Figure4b = ggplot(air_drag, aes(condsize,xerrorratio,color = factor(condsize))) +
+  geom_hline(linetype = 2, yintercept = 1) + 
+  geom_jitter(alpha = 0.025, width = 0.1) +
+  geom_flat_violin(size=1) + 
+  scale_color_manual(name = "", values = c(Lila, Turquoise)) + 
+  theme(legend.position = "none") + 
+  #  stat_pvalue_manual(stat_test_t_b, label = "p.adj",color = "color_p") +
+  labs(x = NULL,
+       y = "Spatial Error ratio") 
+
+plot_grid(Figure4a,Figure4b, labels = "AUTO")
+ggsave("Figure4.jpg", w = 12, h = 6)
+
+######################Ball Size###########################
+Figure5a = ggplot(air_drag %>% mutate(BallSize = case_when(r == 0.033 ~ "0.033 m", r == 0.12 ~ "0.12 m")), 
+                                      aes(BallSize,terrorratio,color = BallSize)) +
+  geom_hline(linetype = 2, yintercept = 1) + 
+  geom_jitter(alpha = 0.025, width = 0.1) +
+  geom_flat_violin(size=1) + 
+  scale_color_manual(name = "", values = c("green", "darkgreen")) + 
+  theme(legend.position = "none") + 
+  #  stat_pvalue_manual(stat_test_t_b, label = "p.adj",color = "color_p") +
+  labs(x = NULL,
+       y = "Timing Error ratio") 
+
+Figure5b = ggplot(air_drag %>% mutate(BallSize = case_when(r == 0.033 ~ "0.033 m", r == 0.12 ~ "0.12 m")), 
+                  aes(BallSize,xerrorratio,color = BallSize)) +
+  geom_hline(linetype = 2, yintercept = 1) + 
+  geom_jitter(alpha = 0.025, width = 0.1) +
+  geom_flat_violin(size=1) + 
+  scale_color_manual(name = "", values = c("green", "darkgreen")) + 
+  theme(legend.position = "none") + 
+  #  stat_pvalue_manual(stat_test_t_b, label = "p.adj",color = "color_p") +
+  labs(x = NULL,
+       y = "Spatial Error ratio") 
+
+plot_grid(Figure5a,Figure5b, labels = "AUTO")
+ggsave("Figure5.jpg", w = 12, h = 6)
+
+
 # =============================================================================
 # a) Timing: Variability ratio vs. error ratio 
 # =============================================================================
@@ -398,14 +663,12 @@ mean_ratio_sd_air_Drag <- air_drag_sum %>%
          min_terror = mean_cl_normal(SDratio_t)$ymin,
          ratio_t = mean_cl_normal(SDratio_t)$y)
 
-ggplot(air_drag_sum,aes(terror_ratio,ratio_t,fill = id)) + 
-  geom_abline(linetype = 2) +
-  geom_point(alpha = 0.25, shape = 21) + 
-  geom_point(data= air_drag_participant, size = 3, shape = 21) +
-  stat_cor(data = air_drag_participant, aes(group = 0)) + 
-  labs(x = expression(rt/t[max]),
-       y = expression(sigma[t]/t[max]),
-       color = NULL) + 
+Figure10a = ggplot(air_drag_sum,aes(terrorratio,SDratio_t,fill = id)) + 
+  geom_point(alpha = 0.025, shape = 21) + 
+  geom_point(data= air_drag_participant, size = 5, shape = 21) +
+  labs(x = expression("Error Ratio (s)"),
+       y = expression("Normalized SD (s)"),
+       color = NULL) +
   guides(fill = F) +
   scale_fill_viridis_d()
 
@@ -413,17 +676,18 @@ ggplot(air_drag_sum,aes(terror_ratio,ratio_t,fill = id)) +
 # b) Spatial: Variability ratio vs. error ratio 
 # =============================================================================
 
-ggplot(air_drag_sum,aes(xerrorratio,SDratio_x,fill = id)) + 
-  geom_abline(linetype = 2) +
-  geom_point(alpha = 0.25, shape = 21) + 
-  geom_point(data= air_drag_participant, size = 3, shape = 21) +
-  stat_cor(data = air_drag_participant, aes(group = 0)) + 
-  labs(x = expression(rx/x[max]),
-       y = expression(sigma[x]/x[max]),
-       color = NULL) + 
+Figure10b = ggplot(air_drag_sum,aes(xerrorratio,SDratio_x,fill = id)) + 
+  geom_point(alpha = 0.025, shape = 21) + 
+  geom_point(data= air_drag_participant, size = 5, shape = 21) +
+  labs(x = expression("Error Ratio (m)"),
+       y = expression("Normalized SD (m)"),
+       color = NULL) +
   guides(fill = F) +
-  scale_fill_viridis_d() 
+  scale_fill_viridis_d() +
+  coord_cartesian(ylim = c(0,0.4), xlim = c(0.4,1.4))
 
+plot_grid(Figure10a,Figure10b, labels = "AUTO")
+ggsave("Figure10.jpg", w = 12, h = 6)
 # =============================================================================
 # c) Timing variability ratio vs. Spatial variability ratio
 # =============================================================================
