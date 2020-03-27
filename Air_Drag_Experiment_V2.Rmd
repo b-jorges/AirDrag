@@ -903,6 +903,7 @@ mean_ratio_sd_air_Drag <- air_drag_sum %>%
 # =============================================================================
 # a) Timing: Variability ratio vs. error ratio 
 # =============================================================================
+
 ggplot(air_drag_sum,aes(terror_ratio,ratio_t,fill = id)) + 
   geom_abline(linetype = 2) +
   geom_point(alpha = 0.25, shape = 21) + 
