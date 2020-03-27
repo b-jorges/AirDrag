@@ -250,18 +250,18 @@ Hypotheses = hypothesis(fit4,c("sigma_condsizeIncongruent < 0"))
 
 ###Do different ballsizes elicit differences in conditions?
 #variability
-fit5 <- brm(bf(terrorratio ~ ball + (1|id),
+fit5 <- brm(bf(terrorratio ~ as.factor(r) + (1|id),
                sigma ~ ball + (1|id)),
             data = air_drag, family = gaussian())
-Hypotheses = hypothesis(fit5,c("sigma_ballTennis < 0"))
+hypothesis(fit5,c("sigma_ball > 0"))
 
-fit6 <- brm(bf(xerrorratio ~ ball + (1|id),
+fit6 <- brm(bf(xerrorratio ~ as.factor(r) + (1|id),
                sigma ~ ball + (1|id)),
             data = air_drag, family = gaussian())
-Hypotheses = hypothesis(fit6,c("sigma_ballTennis < 0"))
+hypothesis(fit6,c("sigma_ball < 0"))
 
 #biases
-Expl_Ballsize_Time_Bias <- lmer(terrorratio ~ ball + (1|id), 
+Expl_Ballsize_Time_Bias <- lmer(terrorratio ~ as.factor(r) + (1|id), 
                              data = air_drag)
 Expl_Ballsize_Bias_Time_Null <- lmer(terrorratio ~ (1|id), 
                              data = air_drag)
@@ -269,7 +269,7 @@ anova(Expl_Ballsize_Time_Bias,Expl_Ballsize_Bias_Time_Null)
 summary(Expl_Ballsize_Time_Bias)
 
 
-Expl_Ballsize_Space_Bias <- lmer(xerrorratio ~ ball + (1|id), 
+Expl_Ballsize_Space_Bias <- lmer(xerrorratio ~ as.factor(r) + (1|id), 
                              data = air_drag)
 Expl_Ballsize_Space_Bias_Null <- lmer(xerrorratio ~ (1|id), 
                              data = air_drag)
@@ -368,7 +368,7 @@ hypothesis(fit7, "SDratio_t > 0")
 fit8 <- brm(bf(xerrorratio ~ SDratio_x + (1|label),
                sigma ~ SDratio_x + (1|label)),
             data = air_drag_VariabilityvsBias, family = gaussian())
-hypothesis(fit8, "SDratio_t > 0")
+hypothesis(fit8, "SDratio_x > 0")
 
 
 
