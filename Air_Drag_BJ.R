@@ -98,18 +98,29 @@ nAllTrials = length(air_drag$trial)
 air_drag = air_drag %>% 
   group_by(id,label) %>%
   filter(terrorratio < 4 & terrorratio > 0.25,
-         xerrorratio < 4 & xerrorratio > 0.25) %>%
-  #exclude outliers that are more than 2.5 standard deviations above or below the mean of the corresponding condition/id
-  filter(terrorratio > mean(terrorratio)-2.5*sd(terrorratio) & terrorratio < mean(terrorratio)+2.5*sd(terrorratio),
-         xerrorratio > mean(xerrorratio)-2.5*sd(xerrorratio) & xerrorratio < mean(xerrorratio)+2.5*sd(xerrorratio)) %>%
-  #trim
+         xerrorratio < 4 & xerrorratio > 0.25)
+
+#how many trials did we lose?
+nTrialsFirstStep = nAllTrials - length(air_drag$trial)
+nTrialsFirstStep/nAllTrials
+
+air_drag = air_drag %>% 
+  group_by(id,label) %>%
   filter(trim(terror, filter = T)) %>%
   filter(trim(xerror, filter = T))
+    
+nTrialsSecondStep = nAllTrials - nTrialsFirstStep - length(air_drag$trial)
+nTrialsSecondStep/(nAllTrials - nTrialsFirstStep)
 
+  #trim
+
+?trim
 #number of excluded trials
-nAllTrials - length(air_drag$trial)
+  nTrialsThirdStep = nAllTrials - nTrialsSecondStep - nTrialsFirstStep - length(air_drag$trial)
+  nTrialsSecondStep/(nAllTrials - nTrialsFirstStep)
 
-
+lala = boxplot.stats(air_drag$terror)
+?boxplot.stats
 ####################################################################
 ################Confirmatory Analyses###############################
 ####################################################################
