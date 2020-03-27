@@ -141,6 +141,7 @@ H1_Temporal_Null <- lmer(terrorratio ~ (1|id),
 anova(H1_Temporal,H1_Temporal_Null)
 summary(H1_Temporal)
 
+
 #are temporal errors in either condition centered around 1?
 H1_Temporal_Intercept1 <- lmer(terrorratio-1 ~ 0 + (1|id), 
                          data = air_drag[air_drag$airdrag == "Airdrag",])
@@ -159,6 +160,12 @@ summary(H1_Temporal_Intercept2)
 #not for the Airdrag: Absent condition either
 
 
+#Hypothesis 1: Bayesian Linear Mixed Models
+fit1 <- brm(bf(terrorratio ~ airdrag + (1|id),
+               sigma ~ airdrag + (1|id)),
+            data = air_drag, family = gaussian())
+
+
 
 ###Hypothesis 1b: Spatial Error
 #quick visualization
@@ -167,7 +174,7 @@ ggplot(air_drag, aes(airdrag,xerrorratio,color = airdrag)) +
   geom_hline(yintercept=1) +
   geom_boxplot()
 
-#Are temporal error different between airdrag present/absent?
+#Are spatial errors different between airdrag present/absent?
 H1_Spatial <- lmer(xerrorratio ~ airdrag + (1|id), 
                          data = air_drag)
 H1_Spatial_Null <- lmer(xerrorratio ~ (1|id), 
@@ -176,29 +183,23 @@ anova(H1_Spatial,H1_Spatial_Null)
 summary(H1_Spatial)
 
 #are temporal errors in either condition centered around 1?
-H1_Spatial <- lmer(xerrorratio-1 ~ 0 + (1|id), 
+H1_SpatialIntercept1 <- lmer(xerrorratio-1 ~ 0 + (1|id), 
                          data = air_drag[air_drag$airdrag == "Airdrag",])
-H1_Spatial_Null <- lmer(xerrorratio-1 ~ (1|id), 
+H1_SpatialIntercept1_Null <- lmer(xerrorratio-1 ~ (1|id), 
                                    data = air_drag[air_drag$airdrag == "Airdrag",])
-anova(H1_Spatial,H1_Spatial_Null)
+anova(H1_SpatialIntercept1,H1_SpatialIntercept1_Null)
 summary(H1_Spatial)
 
-H1_Spatial_Intercept1 <- lmer(xerrorratio-1 ~ 0 + (1|id), 
+H1_Spatial_Intercept2 <- lmer(xerrorratio-1 ~ 0 + (1|id), 
                          data = air_drag[air_drag$airdrag == "NoAirdrag",])
-H1_Spatial_Intercept1_Null <- lmer(xerrorratio-1 ~ (1|id), 
+H1_Spatial_Intercept2_Null <- lmer(xerrorratio-1 ~ (1|id), 
                                    data = air_drag[air_drag$airdrag == "NoAirdrag",])
-anova(H1_Spatial_Intercept1,H1_Spatial_Intercept1_Null)
+anova(H1_Spatial_Intercept2,H1_Spatial_Intercept2_Null)
 summary(H1_Spatial_Intercept1)
 
 
 #Hypothesis 1: Bayesian Linear Mixed Models
-fit1 <- brm(bf(terrorratio ~ airdrag + (1|id),
-               sigma ~ airdrag + (1|id)),
-            data = air_drag, family = gaussian())
-
 hypothesis(fit1,c("abs(Intercept-1) < abs(Intercept+airdragNoAirdrag-1)"))
-
-
 fit2 <- brm(bf(xerrorratio ~ airdrag + (1|id),
                sigma ~ airdrag + (1|id)),
             data = air_drag, family = gaussian())
