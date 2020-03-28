@@ -242,22 +242,23 @@ summary(H2_Space)
 ####################################################################
 ###Is precision lower when no air drag is presented in the visible part of the trajectory?
 
-hypothesis(fit1,c("sigma_airdragAirdrag < 0"))
+hypothesis(fit1,c("exp(sigma_airdragNoAirdrag + sigma_Intercept) > exp(sigma_Intercept)"))
 
-hypothesis(fit2,c("sigma_airdragAirdrag < 0"))
+hypothesis(fit2,c("exp(sigma_airdragNoAirdrag + sigma_Intercept) > exp(sigma_Intercept)"))
 
+plot(conditional_effects(fit2), points = FALSE)
 
 ###Does variability in responses differ between congruent and incongruent trials?
 fit3 <- brm(bf(terrorratio ~ condsize + (1|id),
                sigma ~ condsize + (1|id)),
             data = air_drag[air_drag$airdrag == "Airdrag",], family = gaussian())
-Hypotheses = hypothesis(fit3,c("sigma_condsizeIncongruent < 0"))
+hypothesis(fit3,c("exp(sigma_condsizeIncongruent + sigma_Intercept) > exp(sigma_Intercept)"))
 
 
 fit4 <- brm(bf(xerrorratio ~ condsize + (1|id),
                sigma ~ condsize + (1|id)),
             data = air_drag[air_drag$airdrag == "Airdrag",], family = gaussian())
-Hypotheses = hypothesis(fit4,c("sigma_condsizeIncongruent < 0"))
+hypothesis(fit4,c("exp(sigma_condsizeIncongruent + sigma_Intercept) > exp(sigma_Intercept)"))
 
 
 ###Do different ballsizes elicit differences in conditions?
@@ -272,12 +273,12 @@ ggplot(air_drag, aes(as.factor(r),xerrorratio)) +
   geom_boxplot()
 
 fit5 <- brm(bf(terrorratio ~ as.factor(r) + (1|id),
-               sigma ~ ball + (1|id)),
+               sigma ~ as.factor(r) + (1|id)),
             data = air_drag, family = gaussian())
 hypothesis(fit5,c("sigma_ball > 0"))
 
 fit6 <- brm(bf(xerrorratio ~ as.factor(r) + (1|id),
-               sigma ~ ball + (1|id)),
+               sigma ~ as.factor(r) + (1|id)),
             data = air_drag, family = gaussian())
 hypothesis(fit6,c("sigma_ball < 0"))
 
