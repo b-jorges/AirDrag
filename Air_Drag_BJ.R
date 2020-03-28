@@ -238,7 +238,7 @@ summary(H2_Space)
 
 
 ####################################################################
-################Confirmatory Analyses###############################
+################Exploratory Analyses###############################
 ####################################################################
 ###Is precision lower when no air drag is presented in the visible part of the trajectory?
 
@@ -248,7 +248,29 @@ hypothesis(fit2,c("exp(sigma_airdragNoAirdrag + sigma_Intercept) > exp(sigma_Int
 
 plot(conditional_effects(fit2), points = FALSE)
 
+air_drag %>%
+  group_by(id,label) %>%
+  mutate(sd_T = sd(terrorratio),
+         sd_X = sd(xerrorratio)) %>%
+  slice(1) %>%
+  group_by(airdrag) %>%
+  mutate(mean_sd_T = sd(sd_T),
+         mean_sd_X = sd(sd_X)) %>%
+  slice(1) %>%
+  select(mean_sd_T,mean_sd_X)
+
 ###Does variability in responses differ between congruent and incongruent trials?
+air_drag %>%
+  group_by(id,label) %>%
+  mutate(sd_T = sd(terrorratio),
+         sd_X = sd(xerrorratio)) %>%
+  slice(1) %>%
+  group_by(condsize) %>%
+  mutate(mean_sd_T = sd(sd_T),
+         mean_sd_X = sd(sd_X)) %>%
+  slice(1) %>%
+  select(mean_sd_T,mean_sd_X)
+
 fit3 <- brm(bf(terrorratio ~ condsize + (1|id),
                sigma ~ condsize + (1|id)),
             data = air_drag[air_drag$airdrag == "Airdrag",], family = gaussian())
@@ -272,6 +294,17 @@ ggplot(air_drag, aes(as.factor(r),xerrorratio)) +
   geom_violin() +
   geom_boxplot()
 
+air_drag %>% ###get approximate values for standard deviations
+  group_by(id,label) %>%
+  mutate(sd_T = sd(terrorratio),
+         sd_X = sd(xerrorratio)) %>%
+  slice(1) %>%
+  group_by(r) %>%
+  mutate(mean_sd_T = sd(sd_T),
+         mean_sd_X = sd(sd_X)) %>%
+  slice(1) %>%
+  select(mean_sd_T,mean_sd_X)
+
 fit5 <- brm(bf(terrorratio ~ as.factor(r) + (1|id),
                sigma ~ as.factor(r) + (1|id)),
             data = air_drag, family = gaussian())
@@ -283,6 +316,14 @@ fit6 <- brm(bf(xerrorratio ~ as.factor(r) + (1|id),
 hypothesis(fit6,c("sigma_ball < 0"))
 
 #biases
+
+air_drag %>% ###get approximate values for means
+  group_by(r) %>%
+  mutate(mean_T = mean(terrorratio),
+         mean_X = mean(xerrorratio)) %>%
+  slice(1) %>%
+  select(mean_T,mean_X)
+
 Expl_Ballsize_Time_Bias <- lmer(terrorratio ~ as.factor(r) + (1|id), 
                              data = air_drag)
 Expl_Ballsize_Bias_Time_Null <- lmer(terrorratio ~ (1|id), 
@@ -314,7 +355,7 @@ for (i in seq(0,1.4*0.575,0.01)){
   ax = -(D/m)*vt*vx
   ay = g - (D/m)*vt*vy
   
-  vx = vx  + ax  * 0.01
+  vx = vx  + ax  * 0.01 ###what is the horizontal velocity after half the trajectory under air drag? noticeably different?
   vy = vy + ay  * 0.01
   
   print(i)
@@ -361,7 +402,7 @@ summary(Expl_BiasVsPrecision_Within_Time)
 
 Expl_BiasVsPrecision_Within_Space <- lmer(xerrorratio ~ SDratio_x + (1|id), 
                              data = air_drag_VariabilityvsBias)
-Expl_BiasVsPrecision_Within_Space_Null <- lmer(terrorratio ~  (1|id), 
+Expl_BiasVsPrecision_Within_Space_Null <- lmer(xerrorratio ~  (1|id), 
                              data = air_drag_VariabilityvsBias)
 anova(Expl_BiasVsPrecision_Within_Space,Expl_BiasVsPrecision_Within_Space_Null)
 summary(Expl_BiasVsPrecision_Within_Space)
