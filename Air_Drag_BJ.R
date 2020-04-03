@@ -758,7 +758,7 @@ mean_ratio_sd_air_Drag <- air_drag_sum %>%
          min_terror = mean_cl_normal(SDratio_t)$ymin,
          ratio_t = mean_cl_normal(SDratio_t)$y)
 
-Figure10a = ggplot(air_drag_sum,aes(terrorratio,SDratio_t,fill = id)) + 
+Figure6a = ggplot(air_drag_sum,aes(terrorratio,SDratio_t,fill = id)) + 
   geom_point(alpha = 0.025, shape = 21) + 
   geom_point(data= air_drag_participant, size = 5, shape = 21) +
   labs(x = expression("Error Ratio Timing"),
@@ -771,7 +771,7 @@ Figure10a = ggplot(air_drag_sum,aes(terrorratio,SDratio_t,fill = id)) +
 # b) Spatial: Variability ratio vs. error ratio 
 # =============================================================================
 
-Figure10b = ggplot(air_drag_sum,aes(xerrorratio,SDratio_x,fill = id)) + 
+Figure6b = ggplot(air_drag_sum,aes(xerrorratio,SDratio_x,fill = id)) + 
   geom_point(alpha = 0.025, shape = 21) + 
   geom_point(data= air_drag_participant, size = 5, shape = 21) +
   labs(x = expression("Error Ratio Space"),
@@ -781,46 +781,86 @@ Figure10b = ggplot(air_drag_sum,aes(xerrorratio,SDratio_x,fill = id)) +
   scale_fill_viridis_d() +
   coord_cartesian(ylim = c(0,0.4), xlim = c(0.4,1.4))
 
-plot_grid(Figure10a,Figure10b, labels = "AUTO")
+plot_grid(Figure6a,Figure6b, labels = "AUTO")
 ggsave("Figure06.jpg", w = 12, h = 6)
-# =============================================================================
-# c) Timing variability ratio vs. Spatial variability ratio
-# =============================================================================
-
-ggplot(air_drag_sum,aes(SDratio_t,SDratio_x,fill = id)) + 
-  geom_abline(linetype = 2) + 
-  geom_point(alpha = 0.25, shape = 21) + 
-  geom_point(data= air_drag_participant, size = 3, shape = 21) +
-  ggpubr::stat_cor(aes(group = 0))+ 
-  labs(title = paste0("Spatial ratio: ", round( air_drag_ratios$ratio_x[1],3),
-                      "\nTemporal ratio: ", round( air_drag_ratios$ratio_t[1],3)),
-       x = expression(sigma[x]/x[max]),
-       y = expression(sigma[t]/t[max]),
-       color = NULL) + 
-  scale_fill_viridis_d() +
-  guides(fill = FALSE) +
-  # geom_errorbarh(data = mean_ratio_sd_air_Drag, 
-  #                aes(x = ratio_x,
-  #                    xmax = max_xerror,   
-  #                    xmin = min_xerror)) +   
-  # geom_errorbar(data = mean_ratio_sd_air_Drag,aes(y = ratio_t,
-  #                    ymax = max_terror,
-  #                    ymin = min_terror)) +
-  theme_minimal(12)
 
 
-# =============================================================================
-# c) Terror ratio vs. Xerror ratio
-# =============================================================================
-ggplot(air_drag_sum  ,aes(xerror_ratio,terror_ratio,fill = id)) + 
-  geom_abline(linetype = 2) + 
-  geom_point(alpha = 0.25, shape = 21) + 
-  geom_point(data= air_drag_participant, size = 3, shape = 21) +
-  ggpubr::stat_cor(aes(group = 0))+ 
-  labs(x = expression(r[x]/x[max]),
-       y = expression(r[t]/t[max]),
-       color = NULL) + 
-  scale_fill_viridis_d() +
-  #guides(fill = FALSE) +
-  #facet_wrap(~id) +
-  theme_minimal(12)
+
+#######################################per subject distributions
+Figure7a = ggplot(air_drag, aes(airdrag,terrorratio,color = factor(airdrag))) +
+  geom_hline(linetype = 2, yintercept = 1) + 
+  geom_jitter(alpha = 0.025, width = 0.1) +
+  geom_flat_violin(size=1) + 
+  scale_color_discrete(name = "") + 
+  scale_x_discrete(labels=c("AD","No AD")) +
+  theme(legend.position = "none") + 
+  #  stat_pvalue_manual(stat_test_t_b, label = "p.adj",color = "color_p") +
+  labs(x = NULL,
+       y = "Timing Error ratio") +
+  facet_wrap(.~id)
+Figure7b = ggplot(air_drag, aes(airdrag,xerrorratio,color = factor(airdrag))) +
+  geom_hline(linetype = 2, yintercept = 1) + 
+  geom_jitter(alpha = 0.025, width = 0.1) +
+  geom_flat_violin(size=1) + 
+  scale_color_discrete(name = "") +
+  scale_x_discrete(labels=c("AD","No AD")) +
+  theme(legend.position = "none") + 
+  #  stat_pvalue_manual(stat_test_t_b, label = "p.adj",color = "color_p") +
+  labs(x = NULL,
+       y = "Spatial Error ratio") +
+  facet_wrap(.~id)
+plot_grid(Figure7a,Figure7b, labels = "AUTO")
+ggsave("Figure07 Not Transformed.jpg", w = 12, h = 6)
+
+
+Figure8a = ggplot(air_drag, aes(airdrag,log(terrorratio),color = factor(airdrag))) +
+  geom_hline(linetype = 2, yintercept = 1) + 
+  geom_jitter(alpha = 0.025, width = 0.1) +
+  geom_flat_violin(size=1) + 
+  scale_color_discrete(name = "") + 
+  scale_x_discrete(labels=c("AD","No AD")) +
+  theme(legend.position = "none") + 
+  #  stat_pvalue_manual(stat_test_t_b, label = "p.adj",color = "color_p") +
+  labs(x = NULL,
+       y = "Timing Error ratio") +
+  facet_wrap(.~id)
+
+Figure8b = ggplot(air_drag, aes(airdrag,log(xerrorratio),color = factor(airdrag))) +
+  geom_hline(linetype = 2, yintercept = 1) + 
+  geom_jitter(alpha = 0.025, width = 0.1) +
+  geom_flat_violin(size=1) + 
+  scale_color_discrete(name = "") + 
+  scale_x_discrete(labels=c("AD","No AD")) +
+  theme(legend.position = "none") + 
+  #  stat_pvalue_manual(stat_test_t_b, label = "p.adj",color = "color_p") +
+  labs(x = NULL,
+       y = "Spatial Error ratio") +
+  facet_wrap(.~id)
+plot_grid(Figure8a,Figure8b, labels = "AUTO")
+ggsave("Figure08 Log Transformed.jpg", w = 12, h = 6)
+
+
+Figure9a = ggplot(air_drag, aes(airdrag,terror,color = factor(airdrag))) +
+  geom_jitter(alpha = 0.025, width = 0.1) +
+  geom_flat_violin(size=1) + 
+  scale_color_discrete(name = "") + 
+  scale_x_discrete(labels=c("AD","No AD")) +
+  theme(legend.position = "none") + 
+  #  stat_pvalue_manual(stat_test_t_b, label = "p.adj",color = "color_p") +
+  labs(x = NULL,
+       y = "Timing Error (s)") +
+  facet_grid(TTC~id)
+ggsave("Figure9a raw temporal error.jpg", w = 18, h = 6)
+
+Figure9b = ggplot(air_drag, aes(airdrag,xerror,color = factor(airdrag))) +
+  geom_jitter(alpha = 0.025, width = 0.1) +
+  geom_flat_violin(size=1) + 
+  scale_color_discrete(name = "") + 
+  scale_x_discrete(labels=c("AD","No AD")) +
+  theme(legend.position = "none") + 
+  #  stat_pvalue_manual(stat_test_t_b, label = "p.adj",color = "color_p") +
+  labs(x = NULL,
+       y = "Spatial Error (m)") +
+  facet_grid(TTC~id)
+ggsave("Figure9b raw spatial error.jpg", w = 18, h = 6)
+
