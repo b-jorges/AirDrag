@@ -230,24 +230,26 @@ summary(Expl_Ballsize_Space_Bias)
 
 CheckModel = air_drag %>%
   group_by(label) %>%
-  filter(airdrag == "Airdrag" & TTC == 1.4) %>%
+  filter(airdrag == "Airdrag" & TTC == 1.0) %>%
   slice(1)
 
 #mean differences in flight time between tennis ball and basketball: 
-mean(c(0.011,0.005,0.007))
+mean(c(0.011/0.55,0.005/0.42,0.007/0.5))
 
 #differences in flight time between tennis ball and basketball: 0.04 + 0.07 + 0.09
-mean(c(0.04,0.07,0.09))
+mean(c(0.04/1.3,0.07/1.4,0.09/1.6))
+
+
 
 fit3 <- brm(bf(terrorratio ~ as.factor(r) + (1|id),
                sigma ~ as.factor(r) + (1|id)),
             data = air_drag, family = gaussian())
-hypothesis(fit3,"as.factorr0.12 < 0.0076")
+hypothesis(fit3,"as.factorr0.12 < 0.015")
 
 fit4 <- brm(bf(xerrorratio ~ as.factor(r) + (1|id),
                sigma ~ as.factor(r) + (1|id)),
             data = air_drag, family = gaussian())
-hypothesis(fit4,"as.factorr0.12 < 0.067")
+hypothesis(fit4,"as.factorr0.12 < 0.045")
 
 
 ##############Hypothesis 3: Does the texture of the ball have any impact?
