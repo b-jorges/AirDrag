@@ -46,50 +46,50 @@ air_drag <-  collapsed %>%
   #x_max_model
   #x_max_model is the x position where participants should believe the ball hit the table, if they had a representation of air drag 
   #t_max_model is the moment participants should believe the ball hit the table, if they had a representation of air drag
-
+  
   #ball indicates whether the ball had a tennis ball texture or a basketball texture
   #cond_size indicates whether the texture of the ball was congruent with its size and other air drag properties
   #r is the radius of the target
   #air_drag indicates whether airdrag was simulated in the first part of the trajectory or not
   #label is a categorical variable with 48 levels, one for each combination of horizontal velocity, 
-       #air drag yes/no, ball type, congruency category and time-to-contact
-  #random_x is the initial position of the ball the observers used to give their spatial response
-  #rtime_timing is the moment from movement onset that observers pressed the button for the timing task
-  #rtime_spatial is the time between appearance of the ball used for the spatial response until they 
-      #pressed the button again to indicate they were satisfied with the position of the ball, i. e. the time
-      #it took them to give their answer
-  #ball_x_spatial is where participants indicated the ball hit the table
-  #id are participant ids
-  #TTC are the overall flight durations
-  #visible denotes the time where the target became invisible
+#air drag yes/no, ball type, congruency category and time-to-contact
+#random_x is the initial position of the ball the observers used to give their spatial response
+#rtime_timing is the moment from movement onset that observers pressed the button for the timing task
+#rtime_spatial is the time between appearance of the ball used for the spatial response until they 
+#pressed the button again to indicate they were satisfied with the position of the ball, i. e. the time
+#it took them to give their answer
+#ball_x_spatial is where participants indicated the ball hit the table
+#id are participant ids
+#TTC are the overall flight durations
+#visible denotes the time where the target became invisible
 
 
-  mutate(
-    #timing error with respect to the real time of impact:
-    #we subtract 0.049s from the temporal responses because we have seen before that our projectors inrtoduce a delay of 0.049s      
-         terror = rtime_timing-t_max-0.049, 
-         #spatial error with respect to real point of impact:
-         xerror = ball_x_spatial - x_max,
-         #how long was the ball occluded:
-         OccludedDuration = t_max-visible,
-         #what percentage of the trajectory was the ball occluded:
-         OccludedPercentage = visible/t_max,
-         #for what length was the ball occluded in spatial terms:
-         OccludedDistance = case_when(
-           air_drag == 1 ~ x_max-(x_max/2+vx*0.8*t_max*(OccludedPercentage-0.5)), #vx is down to 80% of the original speed in air drag condition
-           air_drag == 0 ~ x_max-(x_max/2+vx*t_max*(OccludedPercentage-0.5))),
-         #the temporal error normalized by the duration of the occlusion:
-         terrorratio = (OccludedDuration+terror) / OccludedDuration,
-         #the spatial error normalized by the length of the occlusion:
-         xerrorratio = (OccludedDistance+xerror) / OccludedDistance,
-         
-         #neater way of denoting variables:
-         condsize = factor(cond_size,levels = c("cong","incongr"),
-                            labels = c("Congruent","Incongruent")),
-         ball = factor(ball,levels = c("tennis","basket"),
-                       labels = c("Tennis","Basket")),
-         airdrag = case_when(air_drag == 1 ~ "Airdrag",
-                             air_drag == 0 ~ "NoAirdrag"))
+mutate(
+  #timing error with respect to the real time of impact:
+  #we subtract 0.049s from the temporal responses because we have seen before that our projectors inrtoduce a delay of 0.049s      
+  terror = rtime_timing-t_max-0.049, 
+  #spatial error with respect to real point of impact:
+  xerror = ball_x_spatial - x_max,
+  #how long was the ball occluded:
+  OccludedDuration = t_max-visible,
+  #what percentage of the trajectory was the ball occluded:
+  OccludedPercentage = visible/t_max,
+  #for what length was the ball occluded in spatial terms:
+  OccludedDistance = case_when(
+    air_drag == 1 ~ x_max-(x_max/2+vx*0.8*t_max*(OccludedPercentage-0.5)), #vx is down to 80% of the original speed in air drag condition
+    air_drag == 0 ~ x_max-(x_max/2+vx*t_max*(OccludedPercentage-0.5))),
+  #the temporal error normalized by the duration of the occlusion:
+  terrorratio = (OccludedDuration+terror) / OccludedDuration,
+  #the spatial error normalized by the length of the occlusion:
+  xerrorratio = (OccludedDistance+xerror) / OccludedDistance,
+  
+  #neater way of denoting variables:
+  condsize = factor(cond_size,levels = c("cong","incongr"),
+                    labels = c("Congruent","Incongruent")),
+  ball = factor(ball,levels = c("tennis","basket"),
+                labels = c("Tennis","Basket")),
+  airdrag = case_when(air_drag == 1 ~ "Airdrag",
+                      air_drag == 0 ~ "NoAirdrag"))
 
 #how many data points to we have before getting rid of outliers?
 nAllTrials = length(air_drag$trial)
@@ -113,15 +113,15 @@ air_drag = air_drag %>%
   group_by(id,label) %>%
   filter(trim(terror, filter = T)) %>%
   filter(trim(xerror, filter = T))
-    
+
 nTrialsSecondStep = nAllTrials - nTrialsFirstStep - length(air_drag$trial)
 nTrialsSecondStep/(nAllTrials - nTrialsFirstStep)
 
-  #trim
+#trim
 
 #number of excluded trials
-  nTrialsThirdStep = nAllTrials - nTrialsSecondStep - nTrialsFirstStep - length(air_drag$trial)
-  nTrialsSecondStep/(nAllTrials - nTrialsFirstStep)
+nTrialsThirdStep = nAllTrials - nTrialsSecondStep - nTrialsFirstStep - length(air_drag$trial)
+nTrialsSecondStep/(nAllTrials - nTrialsFirstStep)
 ####################################################################
 ################Confirmatory Analyses###############################
 ####################################################################
@@ -136,26 +136,26 @@ ggplot(air_drag, aes(airdrag,terrorratio,color=airdrag)) +
 
 #Are temporal error different between airdrag present/absent?
 H1_Temporal <- lmer(terrorratio ~ airdrag + (1|id), 
-                         data = air_drag)
+                    data = air_drag)
 H1_Temporal_Null <- lmer(terrorratio ~ (1|id), 
-                                   data = air_drag)
+                         data = air_drag)
 anova(H1_Temporal,H1_Temporal_Null)
 summary(H1_Temporal)
 
 
 #are temporal errors in either condition centered around 1?
 H1_Temporal_Intercept1 <- lmer(terrorratio-1 ~ 0 + (1|id), 
-                         data = air_drag[air_drag$airdrag == "Airdrag",])
+                               data = air_drag[air_drag$airdrag == "Airdrag",])
 H1_Temporal_Intercept1_Null <- lmer(terrorratio-1 ~ (1|id), 
-                         data = air_drag[air_drag$airdrag == "Airdrag",])
+                                    data = air_drag[air_drag$airdrag == "Airdrag",])
 anova(H1_Temporal_Intercept1,H1_Temporal_Intercept1_Null)
 summary(H1_Temporal_Intercept1)
 #not for the Airdrag: Present condition
 
 H1_Temporal_Intercept2 <- lmer(terrorratio-1 ~ 0 + (1|id), 
-                         data = air_drag[air_drag$airdrag == "NoAirdrag",])
+                               data = air_drag[air_drag$airdrag == "NoAirdrag",])
 H1_Temporal_Intercept2_Null <- lmer(terrorratio-1 ~ (1|id), 
-                                   data = air_drag[air_drag$airdrag == "NoAirdrag",])
+                                    data = air_drag[air_drag$airdrag == "NoAirdrag",])
 anova(H1_Temporal_Intercept2,H1_Temporal_Intercept2_Null)
 summary(H1_Temporal_Intercept2)
 #not for the Airdrag: Absent condition either
@@ -165,6 +165,7 @@ summary(H1_Temporal_Intercept2)
 fit1 <- brm(bf(terrorratio ~ airdrag + (1|id),
                sigma ~ airdrag + (1|id)),
             data = air_drag, family = gaussian())
+hypothesis(fit1,c("abs(Intercept-1) < abs(Intercept+airdragNoAirdrag-1)"))$hypothesis
 
 
 
@@ -177,35 +178,38 @@ ggplot(air_drag, aes(airdrag,xerrorratio,color = airdrag)) +
 
 #Are spatial errors different between airdrag present/absent?
 H1_Spatial <- lmer(xerrorratio ~ airdrag + (1|id), 
-                         data = air_drag)
+                   data = air_drag)
 H1_Spatial_Null <- lmer(xerrorratio ~ (1|id), 
-                                   data = air_drag)
+                        data = air_drag)
 anova(H1_Spatial,H1_Spatial_Null)
 summary(H1_Spatial)
 
 #are temporal errors in either condition centered around 1?
 H1_SpatialIntercept1 <- lmer(xerrorratio-1 ~ 0 + (1|id), 
-                         data = air_drag[air_drag$airdrag == "Airdrag",])
+                             data = air_drag[air_drag$airdrag == "Airdrag",])
 H1_SpatialIntercept1_Null <- lmer(xerrorratio-1 ~ (1|id), 
-                                   data = air_drag[air_drag$airdrag == "Airdrag",])
+                                  data = air_drag[air_drag$airdrag == "Airdrag",])
 anova(H1_SpatialIntercept1,H1_SpatialIntercept1_Null)
 summary(H1_Spatial)
 
 H1_Spatial_Intercept2 <- lmer(xerrorratio-1 ~ 0 + (1|id), 
-                         data = air_drag[air_drag$airdrag == "NoAirdrag",])
+                              data = air_drag[air_drag$airdrag == "NoAirdrag",])
 H1_Spatial_Intercept2_Null <- lmer(xerrorratio-1 ~ (1|id), 
                                    data = air_drag[air_drag$airdrag == "NoAirdrag",])
 anova(H1_Spatial_Intercept2,H1_Spatial_Intercept2_Null)
 summary(H1_Spatial_Intercept1)
 
 
+<<<<<<< HEAD
 #Hypothesis 1b: Bayesian Linear Mixed Models
 hypothesis(fit1,c("abs(Intercept-1) < abs(Intercept+airdragNoAirdrag-1)"))
+=======
+  #Hypothesis 1: Bayesian Linear Mixed Models
+  >>>>>>> 31d008b363d69848ac66045898bb5f9a8041c295
 fit2 <- brm(bf(xerrorratio ~ airdrag + (1|id),
                sigma ~ airdrag + (1|id)),
             data = air_drag, family = gaussian())
-
-hypothesis(fit2,c("abs(Intercept-1) < abs(Intercept+airdragNoAirdrag-1)"))
+hypothesis(fit2,c("abs(Intercept-1) < abs(Intercept+airdragNoAirdrag-1)"))$hypothesis
 
 
 ##############Hypothesis 2: 
@@ -249,9 +253,9 @@ ggplot(air_drag, aes(condsize,terrorratio, color = ball)) +
   geom_boxplot()
 
 H2_Time <- lmer(terrorratio ~ ball*condsize + (1|id), 
-                         data = air_drag[air_drag$airdrag == "Airdrag",])
+                data = air_drag[air_drag$airdrag == "Airdrag",])
 H2_Time_Null <- lmer(terrorratio ~ ball + condsize + (1|id), 
-                                      data = air_drag[air_drag$airdrag == "Airdrag",])
+                     data = air_drag[air_drag$airdrag == "Airdrag",])
 anova(H2_Time,H2_Time_Null)
 summary(H2_Time)
 #no difference
@@ -262,9 +266,9 @@ ggplot(air_drag, aes(ball,xerrorratio, color = condsize)) +
   geom_boxplot()
 
 H2_Space <- lmer(xerrorratio ~ ball*condsize + (1|id), 
-                                       data = air_drag[air_drag$airdrag == "Airdrag",])
+                 data = air_drag[air_drag$airdrag == "Airdrag",])
 H2_Space_Null <- lmer(xerrorratio ~ ball + condsize + (1|id), 
-                                       data = air_drag[air_drag$airdrag == "Airdrag",])
+                      data = air_drag[air_drag$airdrag == "Airdrag",])
 anova(H2_Space,H2_Space_Null)
 summary(H2_Space)
 #yes difference
@@ -275,11 +279,10 @@ summary(H2_Space)
 ####################################################################
 ###Is precision lower when no air drag is presented in the visible part of the trajectory?
 
-hypothesis(fit1,c("exp(sigma_airdragNoAirdrag + sigma_Intercept) > exp(sigma_Intercept)"))
+hypothesis(fit1,c("exp(sigma_airdragNoAirdrag + sigma_Intercept) > exp(sigma_Intercept)"))$hypothesis
 
-hypothesis(fit2,c("exp(sigma_airdragNoAirdrag + sigma_Intercept) > exp(sigma_Intercept)"))
+hypothesis(fit2,c("exp(sigma_airdragNoAirdrag + sigma_Intercept) > exp(sigma_Intercept)"))$hypothesis
 
-plot(conditional_effects(fit2), points = FALSE)
 
 air_drag %>%
   group_by(id,label) %>%
@@ -307,7 +310,11 @@ air_drag %>%
 fit4 <- brm(bf(terrorratio ~ condsize + (1|id),
                sigma ~ condsize + (1|id)),
             data = air_drag[air_drag$airdrag == "Airdrag",], family = gaussian())
+<<<<<<< HEAD
 hypothesis(fit4,c("exp(sigma_condsizeIncongruent + sigma_Intercept) > exp(sigma_Intercept)"))
+=======
+  hypothesis(fit3,c("exp(sigma_condsizeIncongruent + sigma_Intercept) > exp(sigma_Intercept)"))$hypothesis
+>>>>>>> 31d008b363d69848ac66045898bb5f9a8041c295
 
 
 fit5 <- brm(bf(xerrorratio ~ condsize + (1|id),
@@ -338,8 +345,20 @@ air_drag %>% ###get approximate values for standard deviations
   slice(1) %>%
   select(mean_sd_T,mean_sd_X)
 
+<<<<<<< HEAD
 hypothesis(fit3,c("sigma_ball > 0"))
 hypothesis(fit4,c("sigma_ball < 0"))
+=======
+  fit5 <- brm(bf(terrorratio ~ as.factor(r) + (1|id),
+                 sigma ~ as.factor(r) + (1|id)),
+              data = air_drag, family = gaussian())
+hypothesis(fit5,c("exp(sigma_as.factorr0.12 + sigma_Intercept) < exp(sigma_Intercept)"))
+
+fit6 <- brm(bf(xerrorratio ~ as.factor(r) + (1|id),
+               sigma ~ as.factor(r) + (1|id)),
+            data = air_drag, family = gaussian())
+hypothesis(fit6,c("exp(sigma_as.factorr0.12 + sigma_Intercept) < exp(sigma_Intercept)"))
+>>>>>>> 31d008b363d69848ac66045898bb5f9a8041c295
 
 #biases
 
@@ -390,42 +409,42 @@ air_drag_VariabilityvsBias <- air_drag_sum %>%
 
 #Overall Variability (between and within together)
 Expl_BiasVsPrecision_Overall_Time <- lm(terrorratio ~ SDratio_t, 
-                             data = air_drag_VariabilityvsBias)
+                                        data = air_drag_VariabilityvsBias)
 summary(Expl_BiasVsPrecision_Overall_Time)
 
 Expl_BiasVsPrecision_Overall_Space <- lm(xerrorratio ~ SDratio_x, 
-                           data = air_drag_VariabilityvsBias)
+                                         data = air_drag_VariabilityvsBias)
 summary(Expl_BiasVsPrecision_Overall_Space)
 
 
 #within Variability
 Expl_BiasVsPrecision_Within_Time <- lmer(terrorratio ~ SDratio_t + (1|id), 
-                             data = air_drag_VariabilityvsBias)
+                                         data = air_drag_VariabilityvsBias)
 Expl_BiasVsPrecision_Within_Time_Null <- lmer(terrorratio ~  (1|id), 
-                             data = air_drag_VariabilityvsBias)
+                                              data = air_drag_VariabilityvsBias)
 anova(Expl_BiasVsPrecision_Within_Time,Expl_BiasVsPrecision_Within_Time_Null)
 summary(Expl_BiasVsPrecision_Within_Time)
 
 Expl_BiasVsPrecision_Within_Space <- lmer(xerrorratio ~ SDratio_x + (1|id), 
-                             data = air_drag_VariabilityvsBias)
+                                          data = air_drag_VariabilityvsBias)
 Expl_BiasVsPrecision_Within_Space_Null <- lmer(xerrorratio ~  (1|id), 
-                             data = air_drag_VariabilityvsBias)
+                                               data = air_drag_VariabilityvsBias)
 anova(Expl_BiasVsPrecision_Within_Space,Expl_BiasVsPrecision_Within_Space_Null)
 summary(Expl_BiasVsPrecision_Within_Space)
 
 
 #between Variability
 Expl_BiasVsPrecision_Between_Time <- lmer(terrorratio ~ SDratio_t + (1|label), 
-                             data = air_drag_VariabilityvsBias)
+                                          data = air_drag_VariabilityvsBias)
 Expl_BiasVsPrecision_Between_Time_Null <- lmer(terrorratio ~  (1|label), 
-                             data = air_drag_VariabilityvsBias) ###singular fit
+                                               data = air_drag_VariabilityvsBias) ###singular fit
 anova(Expl_BiasVsPrecision_Between_Time,Expl_BiasVsPrecision_Between_Time_Null)
 coef(H1_Spatial_NullModel)
 
 Expl_BiasVsPrecision_Between_Space <- lmer(xerrorratio ~ SDratio_x + (1|label), 
-                             data = air_drag_VariabilityvsBias) ###singular fit
+                                           data = air_drag_VariabilityvsBias) ###singular fit
 Expl_BiasVsPrecision_Between_Space_Null <- lmer(xerrorratio ~  (1|label), 
-                             data = air_drag_VariabilityvsBias) ###singular fit
+                                                data = air_drag_VariabilityvsBias) ###singular fit
 anova(Expl_BiasVsPrecision_Between_Space,Expl_BiasVsPrecision_Between_Space_Null)
 summary(Expl_BiasVsPrecision_Between_Space)
 
@@ -479,8 +498,8 @@ Exp_Conds <- Exp_Conds %>%
              rho = .$rho,m = .$m,radius = .$r,
              dt = 0.001,g = .$G,vectors = F)) %>%
   mutate(x_max = max(x),
-            y_max = max(y),
-            t_max = max(t))
+         y_max = max(y),
+         t_max = max(t))
 
 
 # =============================================================================
@@ -608,7 +627,7 @@ Figure2a = ggplot(air_drag, aes(airdrag,terrorratio,color = factor(airdrag))) +
   geom_flat_violin(size=1) + 
   scale_color_discrete(name = "") + 
   theme(legend.position = "none") + 
-#  stat_pvalue_manual(stat_test_t_b, label = "p.adj",color = "color_p") +
+  #  stat_pvalue_manual(stat_test_t_b, label = "p.adj",color = "color_p") +
   labs(x = NULL,
        y = "Timing Error ratio") 
 
@@ -635,7 +654,7 @@ air_drag = air_drag %>%
              condsize == "Congruent" & ball == "Basket" ~ "Basket, Congruent",
              condsize == "Incongruent" & ball == "Basket" ~ "Basket, Incongruent",
            )
-         )
+  )
 
 Figure3a = ggplot(air_drag, aes(BallXCongruency,terrorratio,color = as.factor(BallXCongruency))) +
   geom_hline(linetype = 2, yintercept = 1) + 
@@ -684,7 +703,7 @@ ggsave("Figure4.jpg", w = 12, h = 6)
 
 ######################Ball Size###########################
 Figure5a = ggplot(air_drag %>% mutate(BallSize = case_when(r == 0.033 ~ "0.033 m", r == 0.12 ~ "0.12 m")), 
-                                      aes(BallSize,terrorratio,color = BallSize)) +
+                  aes(BallSize,terrorratio,color = BallSize)) +
   geom_hline(linetype = 2, yintercept = 1) + 
   geom_jitter(alpha = 0.025, width = 0.1) +
   geom_flat_violin(size=1) + 
