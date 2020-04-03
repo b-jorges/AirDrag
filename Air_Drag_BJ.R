@@ -95,6 +95,11 @@ air_drag <-  collapsed %>%
 nAllTrials = length(air_drag$trial)
 
 
+CheckModel = air_drag %>%
+  group_by(label) %>%
+  filter(airdrag == "Airdrag" & TTC == 1.0) %>%
+  slice(1)
+
 air_drag = air_drag %>% 
   group_by(id,label) %>%
   filter(terrorratio < 4 & terrorratio > 0.25,
@@ -114,13 +119,9 @@ nTrialsSecondStep/(nAllTrials - nTrialsFirstStep)
 
   #trim
 
-?trim
 #number of excluded trials
   nTrialsThirdStep = nAllTrials - nTrialsSecondStep - nTrialsFirstStep - length(air_drag$trial)
   nTrialsSecondStep/(nAllTrials - nTrialsFirstStep)
-
-lala = boxplot.stats(air_drag$terror)
-?boxplot.stats
 ####################################################################
 ################Confirmatory Analyses###############################
 ####################################################################
@@ -160,7 +161,7 @@ summary(H1_Temporal_Intercept2)
 #not for the Airdrag: Absent condition either
 
 
-#Hypothesis 1: Bayesian Linear Mixed Models
+#Hypothesis 1a: Bayesian Linear Mixed Models
 fit1 <- brm(bf(terrorratio ~ airdrag + (1|id),
                sigma ~ airdrag + (1|id)),
             data = air_drag, family = gaussian())
@@ -198,7 +199,7 @@ anova(H1_Spatial_Intercept2,H1_Spatial_Intercept2_Null)
 summary(H1_Spatial_Intercept1)
 
 
-#Hypothesis 1: Bayesian Linear Mixed Models
+#Hypothesis 1b: Bayesian Linear Mixed Models
 hypothesis(fit1,c("abs(Intercept-1) < abs(Intercept+airdragNoAirdrag-1)"))
 fit2 <- brm(bf(xerrorratio ~ airdrag + (1|id),
                sigma ~ airdrag + (1|id)),
@@ -207,9 +208,41 @@ fit2 <- brm(bf(xerrorratio ~ airdrag + (1|id),
 hypothesis(fit2,c("abs(Intercept-1) < abs(Intercept+airdragNoAirdrag-1)"))
 
 
+##############Hypothesis 2: 
+air_drag %>% ###get approximate values for means
+  group_by(r) %>%
+  mutate(mean_T = mean(terrorratio),
+         mean_X = mean(xerrorratio)) %>%
+  slice(1) %>%
+  select(mean_T,mean_X)
 
-##############Hypothesis 2: Does the texture of the ball have any impact?
-###Hypothesis 2: Temporal Error
+Expl_Ballsize_Time_Bias <- lmer(terrorratio ~ as.factor(r) + (1|id), 
+                                data = air_drag)
+Expl_Ballsize_Bias_Time_Null <- lmer(terrorratio ~ (1|id), 
+                                     data = air_drag)
+anova(Expl_Ballsize_Time_Bias,Expl_Ballsize_Bias_Time_Null)
+summary(Expl_Ballsize_Time_Bias)
+
+Expl_Ballsize_Space_Bias <- lmer(xerrorratio ~ as.factor(r) + (1|id), 
+                                 data = air_drag)
+Expl_Ballsize_Space_Bias_Null <- lmer(xerrorratio ~ (1|id), 
+                                      data = air_drag)
+anova(Expl_Ballsize_Space_Bias,Expl_Ballsize_Space_Bias_Null)
+summary(Expl_Ballsize_Space_Bias)
+
+
+fit3 <- brm(bf(terrorratio ~ as.factor(r) + (1|id),
+               sigma ~ as.factor(r) + (1|id)),
+            data = air_drag, family = gaussian())
+
+
+fit4 <- brm(bf(xerrorratio ~ as.factor(r) + (1|id),
+               sigma ~ as.factor(r) + (1|id)),
+            data = air_drag, family = gaussian())
+
+
+##############Hypothesis 3: Does the texture of the ball have any impact?
+###Hypothesis 3: Temporal Error
 #quick visualization:
 ggplot(air_drag, aes(condsize,terrorratio, color = ball)) +
   geom_violin() +
@@ -271,19 +304,19 @@ air_drag %>%
   slice(1) %>%
   select(mean_sd_T,mean_sd_X)
 
-fit3 <- brm(bf(terrorratio ~ condsize + (1|id),
-               sigma ~ condsize + (1|id)),
-            data = air_drag[air_drag$airdrag == "Airdrag",], family = gaussian())
-hypothesis(fit3,c("exp(sigma_condsizeIncongruent + sigma_Intercept) > exp(sigma_Intercept)"))
-
-
-fit4 <- brm(bf(xerrorratio ~ condsize + (1|id),
+fit4 <- brm(bf(terrorratio ~ condsize + (1|id),
                sigma ~ condsize + (1|id)),
             data = air_drag[air_drag$airdrag == "Airdrag",], family = gaussian())
 hypothesis(fit4,c("exp(sigma_condsizeIncongruent + sigma_Intercept) > exp(sigma_Intercept)"))
 
 
-###Do different ballsizes elicit differences in conditions?
+fit5 <- brm(bf(xerrorratio ~ condsize + (1|id),
+               sigma ~ condsize + (1|id)),
+            data = air_drag[air_drag$airdrag == "Airdrag",], family = gaussian())
+hypothesis(fit5,c("exp(sigma_condsizeIncongruent + sigma_Intercept) > exp(sigma_Intercept)"))
+
+
+###Do different ballsizes elicit differences in precision?
 #variability
 #quick visualization:
 ggplot(air_drag, aes(as.factor(r),terrorratio)) +
@@ -305,39 +338,12 @@ air_drag %>% ###get approximate values for standard deviations
   slice(1) %>%
   select(mean_sd_T,mean_sd_X)
 
-fit5 <- brm(bf(terrorratio ~ as.factor(r) + (1|id),
-               sigma ~ as.factor(r) + (1|id)),
-            data = air_drag, family = gaussian())
-hypothesis(fit5,c("sigma_ball > 0"))
-
-fit6 <- brm(bf(xerrorratio ~ as.factor(r) + (1|id),
-               sigma ~ as.factor(r) + (1|id)),
-            data = air_drag, family = gaussian())
-hypothesis(fit6,c("sigma_ball < 0"))
+hypothesis(fit3,c("sigma_ball > 0"))
+hypothesis(fit4,c("sigma_ball < 0"))
 
 #biases
 
-air_drag %>% ###get approximate values for means
-  group_by(r) %>%
-  mutate(mean_T = mean(terrorratio),
-         mean_X = mean(xerrorratio)) %>%
-  slice(1) %>%
-  select(mean_T,mean_X)
 
-Expl_Ballsize_Time_Bias <- lmer(terrorratio ~ as.factor(r) + (1|id), 
-                             data = air_drag)
-Expl_Ballsize_Bias_Time_Null <- lmer(terrorratio ~ (1|id), 
-                             data = air_drag)
-anova(Expl_Ballsize_Time_Bias,Expl_Ballsize_Bias_Time_Null)
-summary(Expl_Ballsize_Time_Bias)
-
-
-Expl_Ballsize_Space_Bias <- lmer(xerrorratio ~ as.factor(r) + (1|id), 
-                             data = air_drag)
-Expl_Ballsize_Space_Bias_Null <- lmer(xerrorratio ~ (1|id), 
-                             data = air_drag)
-anova(Expl_Ballsize_Space_Bias,Expl_Ballsize_Space_Bias_Null)
-summary(Expl_Ballsize_Space_Bias)
 
 
 ## End(Not run)
