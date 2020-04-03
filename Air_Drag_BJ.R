@@ -94,12 +94,6 @@ mutate(
 #how many data points to we have before getting rid of outliers?
 nAllTrials = length(air_drag$trial)
 
-
-CheckModel = air_drag %>%
-  group_by(label) %>%
-  filter(airdrag == "Airdrag" & TTC == 1.0) %>%
-  slice(1)
-
 air_drag = air_drag %>% 
   group_by(id,label) %>%
   filter(terrorratio < 4 & terrorratio > 0.25,
@@ -200,12 +194,11 @@ anova(H1_Spatial_Intercept2,H1_Spatial_Intercept2_Null)
 summary(H1_Spatial_Intercept1)
 
 
-<<<<<<< HEAD
+
 #Hypothesis 1b: Bayesian Linear Mixed Models
 hypothesis(fit1,c("abs(Intercept-1) < abs(Intercept+airdragNoAirdrag-1)"))
-=======
-  #Hypothesis 1: Bayesian Linear Mixed Models
-  >>>>>>> 31d008b363d69848ac66045898bb5f9a8041c295
+
+#Hypothesis 1b: Bayesian Linear Mixed Models
 fit2 <- brm(bf(xerrorratio ~ airdrag + (1|id),
                sigma ~ airdrag + (1|id)),
             data = air_drag, family = gaussian())
@@ -235,14 +228,26 @@ anova(Expl_Ballsize_Space_Bias,Expl_Ballsize_Space_Bias_Null)
 summary(Expl_Ballsize_Space_Bias)
 
 
+CheckModel = air_drag %>%
+  group_by(label) %>%
+  filter(airdrag == "Airdrag" & TTC == 1.4) %>%
+  slice(1)
+
+#mean differences in flight time between tennis ball and basketball: 
+mean(c(0.011,0.005,0.007))
+
+#differences in flight time between tennis ball and basketball: 0.04 + 0.07 + 0.09
+mean(c(0.04,0.07,0.09))
+
 fit3 <- brm(bf(terrorratio ~ as.factor(r) + (1|id),
                sigma ~ as.factor(r) + (1|id)),
             data = air_drag, family = gaussian())
-
+hypothesis(fit3,"as.factorr0.12 < 0.0076")
 
 fit4 <- brm(bf(xerrorratio ~ as.factor(r) + (1|id),
                sigma ~ as.factor(r) + (1|id)),
             data = air_drag, family = gaussian())
+hypothesis(fit4,"as.factorr0.12 < 0.067")
 
 
 ##############Hypothesis 3: Does the texture of the ball have any impact?
@@ -310,11 +315,9 @@ air_drag %>%
 fit4 <- brm(bf(terrorratio ~ condsize + (1|id),
                sigma ~ condsize + (1|id)),
             data = air_drag[air_drag$airdrag == "Airdrag",], family = gaussian())
-<<<<<<< HEAD
+
 hypothesis(fit4,c("exp(sigma_condsizeIncongruent + sigma_Intercept) > exp(sigma_Intercept)"))
-=======
-  hypothesis(fit3,c("exp(sigma_condsizeIncongruent + sigma_Intercept) > exp(sigma_Intercept)"))$hypothesis
->>>>>>> 31d008b363d69848ac66045898bb5f9a8041c295
+hypothesis(fit3,c("exp(sigma_condsizeIncongruent + sigma_Intercept) > exp(sigma_Intercept)"))$hypothesis
 
 
 fit5 <- brm(bf(xerrorratio ~ condsize + (1|id),
@@ -345,11 +348,14 @@ air_drag %>% ###get approximate values for standard deviations
   slice(1) %>%
   select(mean_sd_T,mean_sd_X)
 
-<<<<<<< HEAD
+
+
 hypothesis(fit3,c("sigma_ball > 0"))
 hypothesis(fit4,c("sigma_ball < 0"))
-=======
-  fit5 <- brm(bf(terrorratio ~ as.factor(r) + (1|id),
+
+
+
+fit5 <- brm(bf(terrorratio ~ as.factor(r) + (1|id),
                  sigma ~ as.factor(r) + (1|id)),
               data = air_drag, family = gaussian())
 hypothesis(fit5,c("exp(sigma_as.factorr0.12 + sigma_Intercept) < exp(sigma_Intercept)"))
@@ -358,7 +364,6 @@ fit6 <- brm(bf(xerrorratio ~ as.factor(r) + (1|id),
                sigma ~ as.factor(r) + (1|id)),
             data = air_drag, family = gaussian())
 hypothesis(fit6,c("exp(sigma_as.factorr0.12 + sigma_Intercept) < exp(sigma_Intercept)"))
->>>>>>> 31d008b363d69848ac66045898bb5f9a8041c295
 
 #biases
 
