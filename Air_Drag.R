@@ -248,6 +248,10 @@ air_drag <-  collapsed %>%
          airdrag = case_when(air_drag == 1 ~ "Airdrag",
                              air_drag == 0 ~ "NoAirdrag"))
 
+
+
+
+
 #how many data points to we have before getting rid of outliers?
 nAllTrials = length(air_drag$trial)
 
@@ -508,12 +512,12 @@ ggsave("Figure2_with_Insets.jpg", w = 12, h = 6)
 ###Hypothesis 2a: Temporal Error
 ####################################################################
 
-H2_Temporal <- lmer(terrorratio ~ as.factor(r) + (1|id),
-                    data = air_drag[air_drag$airdrag == "Airdrag",])
+H2_Temporal <- lmer(terrorratio ~ as.factor(r)*airdrag + (1|id),
+                    data = air_drag)
 summary(H2_Temporal)
 
-H2_Temporal_Null <- lmer(terrorratio ~ (1|id), 
-                         data = air_drag[air_drag$airdrag == "Airdrag",])
+H2_Temporal_Null <- lmer(terrorratio ~ as.factor(r) + airdrag + (1|id), 
+                         data = air_drag)
 summary(H2_Temporal_Null)
 
 ### Compare models
@@ -523,12 +527,12 @@ anova(H2_Temporal,H2_Temporal_Null)
 ####################################################################
 ###Hypothesis 2b: Spatial Error
 
-H2_Spatial <- lmer(xerrorratio ~ as.factor(r) + (1|id), 
-                   data = air_drag[air_drag$airdrag == "Airdrag",])
+H2_Spatial <- lmer(xerrorratio ~ as.factor(r)*airdrag + (1|id), 
+                   data = air_drag)
 summary(H2_Spatial)
 
-H2_Spatial_Null <- lmer(xerrorratio ~ (1|id), 
-                        data = air_drag[air_drag$airdrag == "Airdrag",])
+H2_Spatial_Null <- lmer(xerrorratio ~ as.factor(r) + airdrag + (1|id), 
+                        data = air_drag)
 summary(H2_Spatial_Null)
 
 ### Compare models
@@ -538,27 +542,37 @@ anova(H2_Spatial,H2_Spatial_Null)
 
 
 ######################Plots Hypothesis 2###########################
+air_drag = air_drag %>%
+  mutate(AirdragXSize = 
+           case_when(
+             airdrag == "Airdrag" & r == 0.12 ~ "Airdrag, r = 0.12m",
+             airdrag == "NoAirdrag" & r == 0.033 ~ "No Airdrag, r = 0.033m",
+             airdrag == "Airdrag" & r == 0.033 ~ "Airdrag, r = 0.033m",
+             airdrag == "NoAirdrag" & r == 0.12 ~ "No Airdrag, r = 0.12m")
+  )
+
 air_drag = air_drag %>% 
-  group_by(r) %>%
+  group_by(r,airdrag) %>%
   mutate(xerrorratio_mean_by_size = mean(xerrorratio),
          xerrorratio_SE_by_size = sd(xerrorratio)/(length(xerrorratio))^0.5,
          terrorratio_mean_by_size = mean(terrorratio),
          terrorratio_SE_by_size = sd(terrorratio)/(length(terrorratio))^0.5)
 
-Figure5a = ggplot(air_drag %>% mutate(BallSize = case_when(r == 0.033 ~ "0.033 m", r == 0.12 ~ "0.12 m")), 
-                  aes(BallSize,terrorratio,color = BallSize)) +
+Figure5a = ggplot(air_drag, 
+                  aes(AirdragXSize,terrorratio,color = AirdragXSize)) +
   geom_hline(linetype = 2, yintercept = 1) + 
   geom_jitter(alpha = 0.025, width = 0.1) +
   geom_flat_violin(size=1) + 
   stat_summary(fun = "median", geom = "point",size = 6, aes(group=id), shape = 95) +
   stat_summary(fun = "median", geom = "point",size = 4, aes(group=0), shape = 16, color = "black") +
-  scale_color_manual(name = "", values = c("deeppink1","deeppink4")) +
+  scale_color_manual(name = "", values = c("deeppink1","deeppink4","green","darkgreen")) +
   theme(legend.position = "none") + 
   #  stat_pvalue_manual(stat_test_t_b, label = "p.adj",color = "color_p") +
   labs(x = NULL,
        y = "Timing Error ratio") 
 
-Figure5a_inset = ggplot(air_drag %>% mutate(BallSize = case_when(r == 0.033 ~ "0.033 m", r == 0.12 ~ "0.12 m")), 
+Figure5a_inset1 = ggplot(air_drag %>% filter(airdrag == "Airdrag") %>% 
+                          mutate(BallSize = case_when(r == 0.033 ~ "0.033 m", r == 0.12 ~ "0.12 m")), 
                                       aes(x = BallSize,
                                       y = terrorratio_mean_by_size,
                                       ymin = terrorratio_mean_by_size-terrorratio_SE_by_size,
@@ -569,58 +583,102 @@ Figure5a_inset = ggplot(air_drag %>% mutate(BallSize = case_when(r == 0.033 ~ "0
   scale_color_manual(name = "", 
                      values = c("deeppink1","deeppink4")) +
   scale_x_discrete(name ="") + 
-  scale_y_continuous(breaks=c(1.015,1.02,1.025)) +
+  scale_y_continuous(breaks=c(1,1.01,1.02)) +
   theme(legend.position = "", 
         axis.text=element_text(size=10),
         axis.title=element_text(size=10)) +
   xlab("") +
   ylab("Error Ratio")
 
+Figure5a_inset2 = ggplot(air_drag %>% filter(airdrag == "NoAirdrag") %>% 
+                          mutate(BallSize = case_when(r == 0.033 ~ "0.033 m", r == 0.12 ~ "0.12 m")), 
+                        aes(x = BallSize,
+                            y = terrorratio_mean_by_size,
+                            ymin = terrorratio_mean_by_size-terrorratio_SE_by_size,
+                            ymax = terrorratio_mean_by_size+terrorratio_SE_by_size,
+                            color = factor(BallSize))) +
+  geom_point(size = 3) +
+  geom_errorbar(width=0.2, size = 1.5) +
+  scale_color_manual(name = "", 
+                     values = c("green","darkgreen")) +
+  scale_x_discrete(name ="") + 
+  scale_y_continuous(breaks=c(1.015,1.025,1.035)) +
+  theme(legend.position = "", 
+        axis.text=element_text(size=10),
+        axis.title=element_text(size=10)) +
+  xlab("") +
+  ylab("Error Ratio")
+
+
 Figure5a_Complete <-
   ggdraw() +
   draw_plot(Figure5a) +
-  draw_plot(Figure5a_inset, x = 0.38, y = .6, width = .3, height = .3)
+  draw_plot(Figure5a_inset1, x = 0.2, y = .5, width = .15, height = .4) +
+  draw_plot(Figure5a_inset2, x = 0.66, y = .5, width = .15, height = .4)
 
 
-Figure5b = ggplot(air_drag %>% mutate(BallSize = case_when(r == 0.033 ~ "0.033 m", r == 0.12 ~ "0.12 m")), 
-                  aes(BallSize,xerrorratio,color = BallSize)) +
+Figure5b = ggplot(air_drag, 
+                  aes(AirdragXSize,xerrorratio,color = AirdragXSize)) +
   geom_hline(linetype = 2, yintercept = 1) + 
   geom_jitter(alpha = 0.025, width = 0.1) +
   geom_flat_violin(size=1) + 
   stat_summary(fun = "median", geom = "point",size = 6, aes(group=id), shape = 95) +
   stat_summary(fun = "median", geom = "point",size = 4, aes(group=0), shape = 16, color = "black") +
-  scale_color_manual(name = "", values = c("deeppink1","deeppink4")) +
+  scale_color_manual(name = "", values = c("deeppink1","deeppink4","green","darkgreen")) +
   theme(legend.position = "none") + 
-  #  stat_pvalue_manual(stat_test_t_b, label = "p.adj",color = "color_p") +
   labs(x = NULL,
-       y = "Spatial Error ratio")
+       y = "Spatial Error ratio") 
 
-  Figure5b_inset = ggplot(air_drag %>% mutate(BallSize = case_when(r == 0.033 ~ "0.033 m", r == 0.12 ~ "0.12 m")), 
-                        aes(x = BallSize,
-                            y = xerrorratio_mean_by_size,
-                            ymin = xerrorratio_mean_by_size-xerrorratio_SE_by_size,
-                            ymax = xerrorratio_mean_by_size+xerrorratio_SE_by_size,
-                            color = factor(BallSize))) +
+Figure5b_inset1 = ggplot(air_drag %>% filter(airdrag == "Airdrag") %>% 
+                           mutate(BallSize = case_when(r == 0.033 ~ "0.033 m", r == 0.12 ~ "0.12 m")), 
+                         aes(x = BallSize,
+                             y = xerrorratio_mean_by_size,
+                             ymin = xerrorratio_mean_by_size-xerrorratio_SE_by_size,
+                             ymax = xerrorratio_mean_by_size+xerrorratio_SE_by_size,
+                             color = factor(BallSize))) +
   geom_point(size = 3) +
   geom_errorbar(width=0.2, size = 1.5) +
   scale_color_manual(name = "", 
                      values = c("deeppink1","deeppink4")) +
   scale_x_discrete(name ="") + 
-  scale_y_continuous(breaks=c(0.89,0.90,0.91)) +
+  scale_y_continuous(breaks=c(0.9,0.915,0.93)) +
   theme(legend.position = "", 
         axis.text=element_text(size=10),
         axis.title=element_text(size=10)) +
   xlab("") +
   ylab("Error Ratio")
 
+Figure5b_inset2 = ggplot(air_drag %>% filter(airdrag == "NoAirdrag") %>% 
+                           mutate(BallSize = case_when(r == 0.033 ~ "0.033 m", r == 0.12 ~ "0.12 m")), 
+                         aes(x = BallSize,
+                             y = xerrorratio_mean_by_size,
+                             ymin = xerrorratio_mean_by_size-xerrorratio_SE_by_size,
+                             ymax = xerrorratio_mean_by_size+xerrorratio_SE_by_size,
+                             color = factor(BallSize))) +
+  geom_point(size = 3) +
+  geom_errorbar(width=0.2, size = 1.5) +
+  scale_color_manual(name = "", 
+                     values = c("green","darkgreen")) +
+  scale_x_discrete(name ="") + 
+  scale_y_continuous(breaks=c(0.885,0.895)) +
+  theme(legend.position = "", 
+        axis.text=element_text(size=10),
+        axis.title=element_text(size=10)) +
+  xlab("") +
+  ylab("Error Ratio")
+
+
 Figure5b_Complete <-
   ggdraw() +
   draw_plot(Figure5b) +
-  draw_plot(Figure5b_inset, x = 0.38, y = .6, width = .3, height = .3)
+  draw_plot(Figure5b_inset1, x = 0.2, y = .5, width = .15, height = .4) +
+  draw_plot(Figure5b_inset2, x = 0.66, y = .5, width = .15, height = .4)
+
+plot_grid(Figure5a_Complete,Figure5b_Complete, nrow = 2, labels = "AUTO")
+ggsave("Figure5 with Insets.jpg", w = 12, h = 8)
 
 
-plot_grid(Figure5a_Complete,Figure5b_Complete, labels = "AUTO")
-ggsave("Figure3 with Insets.jpg", w = 12, h = 6)
+
 
 ####################################################################
 #Are errors dependant on contextual cues?
@@ -830,3 +888,357 @@ Figure7b = ggplot(air_drag, aes(airdrag,xerrorratio,color = factor(airdrag))) +
   facet_wrap(.~id2)
 plot_grid(Figure7a,Figure7b, labels = "AUTO")
 ggsave("Complementary Figure 1.jpg", w = 12, h = 9)
+
+
+
+###expected differences Hypothesis 2
+#get predictions for extrapolated distance:
+GetModelResponses = air_drag %>%
+  mutate(cd = case_when(
+    airdrag == "Airdrag" ~ 0.535,
+    airdrag == "NoAirdrag" ~ 0),
+    vy = case_when(
+      TTC == 1.0 ~ 4.9035,
+      TTC == 1.2 ~ 5.8842,
+      TTC == 1.4 ~ 6.8649),
+    m = case_when(
+      r == 0.033 ~ 0.06,
+      r == 0.12 ~ 0.6),
+    A = pi * r^2,
+    rho = 1.225,
+    D = rho*cd*A/2,
+    D_WithAD = rho*0.535*A/2) %>% 
+  group_by(airdrag,TTC,r,vx) %>% 
+  slice(1)
+
+i = 1
+dt = 0.001
+GetModelResponses$Last_x = 0
+GetModelResponses$Last_y = 0
+GetModelResponses$Last_t = 0
+GetModelResponses$xAtDisappearance = 0
+GetModelResponses$Last_vx = 0
+GetModelResponses$Last_vy = 0
+GetModelResponses$vxAtDisappearance = 0
+GetModelResponses$vyAtDisappearance = 0
+
+for (i in (1:length(GetModelResponses$trial))){
+
+  D = GetModelResponses[i,]$D
+  D2 = GetModelResponses[i,]$D_WithAD
+  vx = GetModelResponses[i,]$vx
+  vy = GetModelResponses[i,]$vy
+  m = GetModelResponses[i,]$m
+  TTC = GetModelResponses[i,]$TTC
+  OccludedPercentage = 0.575
+  
+  g = 9.807
+  t = 0
+  y = 0
+  x = 0
+  Got_X = 0
+  
+  for (j in seq(0,1.5,dt)){
+    
+    if (y >= 0){
+      
+      if (t > OccludedPercentage*TTC){
+        
+        D = D2
+        
+        if (Got_X == 0){
+          xAtDisappearance = x
+          vxAtDisappearance = vx
+          vyAtDisappearance = vy
+          Got_X = 1
+        }
+      }
+      
+      
+      v = sqrt(vx^2+vy^2)
+      
+      ax <- -(D/m)*v*vx
+      ay <- -g - (D/m)*v*vy
+      
+      vx = vx + ax * dt 
+      vy = vy + ay * dt 
+      
+      x = x + vx * dt + 0.5*ax*dt^2
+      y = y + vy * dt + 0.5*ay*dt^2
+
+      t = t + dt
+    }
+  }
+  GetModelResponses$Last_x[i] = x
+  GetModelResponses$Last_y[i] = y
+  GetModelResponses$Last_t[i] = t
+  GetModelResponses$Last_vx[i] = vx
+  GetModelResponses$Last_vy[i] = vy
+  GetModelResponses$xAtDisappearance[i] = xAtDisappearance
+  GetModelResponses$vxAtDisappearance[i] = vxAtDisappearance
+  GetModelResponses$vyAtDisappearance[i] = vyAtDisappearance
+}
+
+GetModelResponses = GetModelResponses %>%
+  select(airdrag,TTC,vy,r,vx,Last_x,Last_t,Last_vx,Last_vy,xAtDisappearance,vxAtDisappearance,vyAtDisappearance) %>%
+  mutate(tAtDisappearance = TTC*0.575,
+         ErrorSpace = case_when(
+           airdrag == "Airdrag" ~ 0,
+           airdrag == "NoAirdrag" ~ Last_x-TTC*vx,
+         ),
+         ErrorTime = case_when(
+           airdrag == "Airdrag" ~ 0,
+           airdrag == "NoAirdrag" ~ Last_t-TTC,
+         ),
+         ExtrapolatedSpace_Model = Last_x - xAtDisappearance,
+         ExtrapolatedTime_Model = Last_t - tAtDisappearance,
+         ErrorRatioSpace = (ErrorSpace+ExtrapolatedSpace_Model)/ExtrapolatedSpace_Model,
+         ErrorRatioTime = (ErrorTime+ExtrapolatedSpace_Model/ExtrapolatedTime_Model)
+  )
+
+####Space, by TTCs
+unique((GetModelResponses %>% 
+  filter(airdrag == "NoAirdrag" & r == 0.12) %>% 
+  select(ErrorSpace) %>%
+  group_by(TTC) %>%
+  mutate(Mean = mean(ErrorSpace)))$Mean) -
+
+unique((GetModelResponses %>% 
+          filter(airdrag == "NoAirdrag" & r == 0.033) %>% 
+          select(ErrorSpace) %>%
+          group_by(TTC) %>%
+          mutate(Mean = mean(ErrorSpace)))$Mean)
+
+###Space Ratio
+mean((GetModelResponses %>% 
+          filter(airdrag == "NoAirdrag" & r == 0.12))$ErrorRatioSpace) -
+  
+  mean((GetModelResponses %>% 
+          filter(airdrag == "NoAirdrag" & r == 0.033))$ErrorRatioSpace)
+
+
+####Time, by TTCs
+unique((GetModelResponses %>% 
+          filter(airdrag == "NoAirdrag" & r == 0.12) %>% 
+          select(ErrorTime) %>%
+          group_by(TTC) %>%
+          mutate(Mean = mean(ErrorTime)))$Mean) -
+  
+  unique((GetModelResponses %>% 
+            filter(airdrag == "NoAirdrag" & r == 0.033) %>% 
+            select(ErrorTime) %>%
+            group_by(TTC) %>%
+            mutate(Mean = mean(ErrorTime)))$Mean)
+
+###Time Ratio
+mean((GetModelResponses %>% 
+        filter(airdrag == "NoAirdrag" & r == 0.12))$ErrorRatioTime) -
+  
+  mean((GetModelResponses %>% 
+          filter(airdrag == "NoAirdrag" & r == 0.033))$ErrorRatioTime)
+
+
+#########Borja
+unique((air_drag %>% 
+  filter(airdrag == "NoAirdrag" & r == 0.033)  %>% 
+    group_by(TTC) %>% 
+  mutate(ErrorSpace = mean(x_max_model-OccludedDistance),
+         ErrorTime = mean(t_max_model-OccludedDuration)))$ErrorSpace) -
+
+  unique((air_drag %>% 
+            filter(airdrag == "NoAirdrag" & r == 0.12)  %>% 
+            group_by(TTC) %>% 
+            mutate(ErrorSpace = mean(x_max_model-OccludedDistance),
+                   ErrorTime = mean(t_max_model-OccludedDuration)))$ErrorSpace)
+
+
+
+####Space, by TTCs
+unique((GetModelResponses %>% 
+          filter(r == 0.12) %>% 
+          select(ExtrapolatedSpace_Model) %>%
+          group_by(TTC) %>%
+          mutate(Mean = mean(ExtrapolatedSpace_Model)))$Mean) -
+  
+  unique((GetModelResponses %>% 
+            filter(r == 0.033) %>% 
+            select(ExtrapolatedSpace_Model) %>%
+            group_by(TTC) %>%
+            mutate(Mean = mean(ExtrapolatedSpace_Model)))$Mean)
+
+###Space Ratio
+mean((GetModelResponses %>% 
+        filter(r == 0.12))$ExtrapolatedSpace_Model) -
+  
+  mean((GetModelResponses %>% 
+          filter(r == 0.033))$ExtrapolatedSpace_Model)
+
+
+####Time, by TTCs
+unique((GetModelResponses %>% 
+          filter(airdrag == "NoAirdrag" & r == 0.12) %>% 
+          select(ErrorTime) %>%
+          group_by(TTC) %>%
+          mutate(Mean = mean(ErrorTime)))$Mean) -
+  
+  unique((GetModelResponses %>% 
+            filter(airdrag == "NoAirdrag" & r == 0.033) %>% 
+            select(ErrorTime) %>%
+            group_by(TTC) %>%
+            mutate(Mean = mean(ErrorTime)))$Mean)
+
+###Time Ratio
+mean((GetModelResponses %>% 
+        filter(airdrag == "NoAirdrag" & r == 0.12))$ErrorRatioTime) -
+  
+  mean((GetModelResponses %>% 
+          filter(airdrag == "NoAirdrag" & r == 0.033))$ErrorRatioTime)
+
+
+
+
+###expected differences Hypothesis 2
+#get predictions for extrapolated distance with gravity only (o sea, inverse of what Borja did in the original code)
+GetModelResponses = air_drag %>%
+  mutate(cd = case_when(
+    airdrag == "Airdrag" ~ 0.535,
+    airdrag == "NoAirdrag" ~ 0),
+    vy = case_when(
+      TTC == 1.0 ~ 4.9035,
+      TTC == 1.2 ~ 5.8842,
+      TTC == 1.4 ~ 6.8649),
+    m = case_when(
+      r == 0.033 ~ 0.06,
+      r == 0.12 ~ 0.6),
+    A = pi * r^2,
+    rho = 1.225,
+    D = rho*cd*A/2,
+    D_WithAD = rho*0.535*A/2) %>% 
+  group_by(airdrag,TTC,r,vx) %>% 
+  slice(1)
+
+i = 1
+dt = 0.001
+GetModelResponses$Last_x = 0
+GetModelResponses$Last_y = 0
+GetModelResponses$Last_t = 0
+GetModelResponses$xAtDisappearance = 0
+GetModelResponses$Last_vx = 0
+GetModelResponses$Last_vy = 0
+GetModelResponses$vxAtDisappearance = 0
+GetModelResponses$vyAtDisappearance = 0
+
+for (i in (1:length(GetModelResponses$trial))){
+  
+  D = GetModelResponses[i,]$D
+  D2 = GetModelResponses[i,]$D_WithAD
+  vx = GetModelResponses[i,]$vx
+  vy = GetModelResponses[i,]$vy
+  m = GetModelResponses[i,]$m
+  TTC = GetModelResponses[i,]$TTC
+  OccludedPercentage = 0.575
+  
+  g = 9.807
+  t = 0
+  y = 0
+  x = 0
+  Got_X = 0
+  
+  for (j in seq(0,1.5,dt)){
+    
+    if (y >= 0){
+      
+      if (t > OccludedPercentage*TTC){
+        
+        D = 0
+        
+        if (Got_X == 0){
+          xAtDisappearance = x
+          vxAtDisappearance = vx
+          vyAtDisappearance = vy
+          Got_X = 1
+        }
+      }
+      
+      
+      v = sqrt(vx^2+vy^2)
+      
+      ax <- -(D/m)*v*vx
+      ay <- -g - (D/m)*v*vy
+      
+      vx = vx + ax * dt 
+      vy = vy + ay * dt 
+      
+      x = x + vx * dt + 0.5*ax*dt^2
+      y = y + vy * dt + 0.5*ay*dt^2
+      
+      t = t + dt
+    }
+  }
+  GetModelResponses$Last_x[i] = x
+  GetModelResponses$Last_y[i] = y
+  GetModelResponses$Last_t[i] = t
+  GetModelResponses$Last_vx[i] = vx
+  GetModelResponses$Last_vy[i] = vy
+  GetModelResponses$xAtDisappearance[i] = xAtDisappearance
+  GetModelResponses$vxAtDisappearance[i] = vxAtDisappearance
+  GetModelResponses$vyAtDisappearance[i] = vyAtDisappearance
+}
+
+GetModelResponses = GetModelResponses %>%
+  select(airdrag,TTC,vy,r,vx,Last_x,Last_t,Last_vx,Last_vy,xAtDisappearance,vxAtDisappearance,vyAtDisappearance,x_max,t_max) %>%
+  mutate(tAtDisappearance = TTC*0.575,
+         ErrorSpace = case_when(
+           airdrag == "NoAirdrag" ~ 0,
+           airdrag == "Airdrag" ~ Last_x-x_max,
+         ),
+         ErrorTime = case_when(
+           airdrag == "NoAirdrag" ~ 0,
+           airdrag == "Airdrag" ~ Last_t-t_max,
+         ),
+         ExtrapolatedSpace_Model = Last_x - xAtDisappearance,
+         ExtrapolatedTime_Model = Last_t - tAtDisappearance,
+         ErrorRatioSpace = (ErrorSpace+ExtrapolatedSpace_Model)/ExtrapolatedSpace_Model,
+         ErrorRatioTime = (ErrorTime+ExtrapolatedTime_Model/ExtrapolatedTime_Model)
+  )
+
+####Space, by TTCs
+unique((GetModelResponses %>% 
+          filter(airdrag == "Airdrag" & r == 0.12) %>% 
+          select(ErrorSpace) %>%
+          group_by(TTC) %>%
+          mutate(Mean = mean(ErrorSpace)))$Mean) -
+  
+  unique((GetModelResponses %>% 
+            filter(airdrag == "Airdrag" & r == 0.033) %>% 
+            select(ErrorSpace) %>%
+            group_by(TTC) %>%
+            mutate(Mean = mean(ErrorSpace)))$Mean)
+
+###Space Ratio
+mean((GetModelResponses %>% 
+        filter(airdrag == "Airdrag" & r == 0.12))$ErrorRatioSpace) -
+  
+  mean((GetModelResponses %>% 
+          filter(airdrag == "Airdrag" & r == 0.033))$ErrorRatioSpace)
+
+
+####Time, by TTCs
+unique((GetModelResponses %>% 
+          filter(airdrag == "Airdrag" & r == 0.12) %>% 
+          select(ErrorTime) %>%
+          group_by(TTC) %>%
+          mutate(Mean = mean(ErrorTime)))$Mean) -
+  
+  unique((GetModelResponses %>% 
+            filter(airdrag == "Airdrag" & r == 0.033) %>% 
+            select(ErrorTime) %>%
+            group_by(TTC) %>%
+            mutate(Mean = mean(ErrorTime)))$Mean)
+
+###Time Ratio
+mean((GetModelResponses %>% 
+        filter(airdrag == "Airdrag" & r == 0.12))$ErrorRatioTime) -
+  
+  mean((GetModelResponses %>% 
+          filter(airdrag == "Airdrag" & r == 0.033))$ErrorRatioTime)
