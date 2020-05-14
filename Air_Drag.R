@@ -954,7 +954,6 @@ for (i in (1:length(GetModelResponses$trial))){
         }
       }
       
-      
       v = sqrt(vx^2+vy^2)
       
       ax <- -(D/m)*v*vx
@@ -996,7 +995,7 @@ GetModelResponses = GetModelResponses %>%
          ErrorRatioTime = (ErrorTime+ExtrapolatedSpace_Model/ExtrapolatedTime_Model)
   )
 
-####Space, by TTCs
+####Space, by TTCs, differences between Airdrag condition and No Airdrag Condition, when we assume an air drag model
 unique((GetModelResponses %>% 
   filter(airdrag == "NoAirdrag" & r == 0.12) %>% 
   select(ErrorSpace) %>%
@@ -1009,7 +1008,7 @@ unique((GetModelResponses %>%
           group_by(TTC) %>%
           mutate(Mean = mean(ErrorSpace)))$Mean)
 
-###Space Ratio
+###Space Ratio, averaged, normalized difference between Airdrag and No Airdrag Condition, when we assume an air drag model
 mean((GetModelResponses %>% 
           filter(airdrag == "NoAirdrag" & r == 0.12))$ErrorRatioSpace) -
   
@@ -1017,7 +1016,7 @@ mean((GetModelResponses %>%
           filter(airdrag == "NoAirdrag" & r == 0.033))$ErrorRatioSpace)
 
 
-####Time, by TTCs
+####Time, by TTCs, differences between Airdrag condition and No Airdrag Condition, when we assume an air drag model
 unique((GetModelResponses %>% 
           filter(airdrag == "NoAirdrag" & r == 0.12) %>% 
           select(ErrorTime) %>%
@@ -1030,7 +1029,7 @@ unique((GetModelResponses %>%
             group_by(TTC) %>%
             mutate(Mean = mean(ErrorTime)))$Mean)
 
-###Time Ratio
+###Time Ratio, averaged, normalized difference between Airdrag and No Airdrag Condition, when we assume an air drag model
 mean((GetModelResponses %>% 
         filter(airdrag == "NoAirdrag" & r == 0.12))$ErrorRatioTime) -
   
@@ -1051,48 +1050,6 @@ unique((air_drag %>%
             mutate(ErrorSpace = mean(x_max_model-OccludedDistance),
                    ErrorTime = mean(t_max_model-OccludedDuration)))$ErrorSpace)
 
-
-
-####Space, by TTCs
-unique((GetModelResponses %>% 
-          filter(r == 0.12) %>% 
-          select(ExtrapolatedSpace_Model) %>%
-          group_by(TTC) %>%
-          mutate(Mean = mean(ExtrapolatedSpace_Model)))$Mean) -
-  
-  unique((GetModelResponses %>% 
-            filter(r == 0.033) %>% 
-            select(ExtrapolatedSpace_Model) %>%
-            group_by(TTC) %>%
-            mutate(Mean = mean(ExtrapolatedSpace_Model)))$Mean)
-
-###Space Ratio
-mean((GetModelResponses %>% 
-        filter(r == 0.12))$ExtrapolatedSpace_Model) -
-  
-  mean((GetModelResponses %>% 
-          filter(r == 0.033))$ExtrapolatedSpace_Model)
-
-
-####Time, by TTCs
-unique((GetModelResponses %>% 
-          filter(airdrag == "NoAirdrag" & r == 0.12) %>% 
-          select(ErrorTime) %>%
-          group_by(TTC) %>%
-          mutate(Mean = mean(ErrorTime)))$Mean) -
-  
-  unique((GetModelResponses %>% 
-            filter(airdrag == "NoAirdrag" & r == 0.033) %>% 
-            select(ErrorTime) %>%
-            group_by(TTC) %>%
-            mutate(Mean = mean(ErrorTime)))$Mean)
-
-###Time Ratio
-mean((GetModelResponses %>% 
-        filter(airdrag == "NoAirdrag" & r == 0.12))$ErrorRatioTime) -
-  
-  mean((GetModelResponses %>% 
-          filter(airdrag == "NoAirdrag" & r == 0.033))$ErrorRatioTime)
 
 
 
@@ -1202,7 +1159,7 @@ GetModelResponses = GetModelResponses %>%
          ErrorRatioTime = (ErrorTime+ExtrapolatedTime_Model/ExtrapolatedTime_Model)
   )
 
-####Space, by TTCs
+####Space, by TTCs, differences between Airdrag condition and No Airdrag Condition, when we assume a gravity only model
 unique((GetModelResponses %>% 
           filter(airdrag == "Airdrag" & r == 0.12) %>% 
           select(ErrorSpace) %>%
@@ -1215,7 +1172,7 @@ unique((GetModelResponses %>%
             group_by(TTC) %>%
             mutate(Mean = mean(ErrorSpace)))$Mean)
 
-###Space Ratio
+###Space Ratio, averaged, normalized difference between Airdrag and No Airdrag Condition, when we assume a gravity only model
 mean((GetModelResponses %>% 
         filter(airdrag == "Airdrag" & r == 0.12))$ErrorRatioSpace) -
   
@@ -1223,7 +1180,7 @@ mean((GetModelResponses %>%
           filter(airdrag == "Airdrag" & r == 0.033))$ErrorRatioSpace)
 
 
-####Time, by TTCs
+####Time, by TTCs, differences between Airdrag condition and No Airdrag Condition, when we assume a gravity only model
 unique((GetModelResponses %>% 
           filter(airdrag == "Airdrag" & r == 0.12) %>% 
           select(ErrorTime) %>%
@@ -1236,7 +1193,7 @@ unique((GetModelResponses %>%
             group_by(TTC) %>%
             mutate(Mean = mean(ErrorTime)))$Mean)
 
-###Time Ratio
+###Time Ratio, averaged, normalized difference between Airdrag and No Airdrag Condition, when we assume a gravity only model
 mean((GetModelResponses %>% 
         filter(airdrag == "Airdrag" & r == 0.12))$ErrorRatioTime) -
   
