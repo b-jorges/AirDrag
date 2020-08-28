@@ -40,6 +40,7 @@ setwd(Where_Am_I())
 
 #load necessary functions
 source("Utilities/Funs.R")
+source("Utilities/colourschemes.R")
 
 
 Exp_Conds <- expand.grid(Xi = 0,
@@ -808,6 +809,108 @@ plot_grid(Figure4aa,Figure4bb, nrow = 2)
 ggsave("Figure4.jpg", w = 12, h = 8)
 
 
+
+
+######################################
+####adjusted##########################
+######################################
+####################################################################
+#Are errors dependant on contextual cues?
+####################################################################
+###Hypothesis 3a: Temporal Error
+####################################################################
+H3_Temporal_Interaction <- lmer(terrorratio ~ AirdragXSize*condsize + (1|id), 
+                                data = air_drag)
+summary(H3_Temporal_Interaction)
+
+H3_Temporal_Main  <- lmer(terrorratio ~ AirdragXSize + condsize + (1|id), 
+                          data = air_drag)
+summary(H3_Temporal_Main)
+
+### Compare models
+anova(H3_Temporal_Interaction,H3_Temporal_Main)
+
+
+####################################################################
+###Hypothesis 3b: Spatial Error
+####################################################################
+
+H3_Spatial_Interaction <- lmer(xerrorratio ~ AirdragXSize*condsize + (1|id), 
+                               data = air_drag)
+summary(H3_Spatial_Interaction)
+
+H3_Spatial_Main <- lmer(xerrorratio ~ AirdragXSize + condsize +(1|id), 
+                        data = air_drag)
+summary(H3_Spatial_Main)
+
+### Compare models
+anova(H3_Spatial_Interaction,H3_Spatial_Main)
+
+Figure4a = ggplot(air_drag, aes(AirdragXSize,terrorratio,color = condsize)) +
+  geom_hline(linetype = 2, yintercept = 1) + 
+  geom_flat_violin(size=1) + 
+  scale_color_manual(name = "", values = c("red", "royalblue1")) + 
+  labs(x = NULL,
+       y = "Timing Error Ratio")  +
+  theme(legend.position = "bottom") +
+  ggtitle("A")
+
+
+Figure4a_inset1 = ggplot(air_drag , aes(x = AirdragXSize,
+                                        y = terrorratio,
+                                        color = condsize)) +
+  stat_summary(geom="point") +
+  stat_summary(width = 0.2, geom="errorbar") +
+  scale_color_manual(name = "", 
+                     values = c("red","royalblue1")) +
+  theme(legend.position = "bottom",
+        axis.text= element_text(size = rel(0.6)),
+        axis.title = element_text(size = rel(0.6))) +
+  xlab("") +
+  ylab("Timing Error Ratio") +
+  ggtitle("B") +
+  scale_x_discrete(labels = c("AD: Pres,\nr = 0.033m",
+                              "AD: Pres,\nr = 0.12m",
+                              "AD: Abs,\nr = 0.033m",
+                              "AD: Abs,\nr = 0.12m"))
+
+Figure4aa = plot_grid(Figure4a,Figure4a_inset1,rel_widths = c(0.75,0.25))
+
+Figure4b = ggplot(air_drag, aes(AirdragXSize,xerrorratio,color = condsize)) +
+  geom_hline(linetype = 2, yintercept = 1) + 
+  geom_flat_violin(size=1) + 
+  scale_color_manual(name = "", values = c("red","royalblue1")) + 
+  labs(x = NULL,
+       y = "Spatial Error Ratio")  +
+  theme(legend.position = "bottom") +
+  ggtitle("C")
+
+Figure4b_inset1 = ggplot(air_drag,
+                         aes(x = AirdragXSize,
+                             y = xerrorratio,
+                             color = condsize)) +
+  stat_summary(geom="point") +
+  stat_summary(width = 0.2, geom="errorbar") +
+  scale_color_manual(name = "", 
+                     values = c("red","royalblue1")) +
+  theme(legend.position = "bottom",
+        axis.text= element_text(size = rel(0.6)),
+        axis.title = element_text(size = rel(0.6))) +
+  scale_x_discrete(labels = c("AD: Pres,\nr = 0.033m",
+                              "AD: Pres,\nr = 0.12m",
+                              "AD: Abs,\nr = 0.033m",
+                              "AD: Abs,\nr = 0.12m")) +
+  xlab("") +
+  ylab("Spatial Error Ratio") +
+  ggtitle("D")
+
+Figure4bb = plot_grid(Figure4b,Figure4b_inset1,rel_widths = c(0.75,0.25))
+
+plot_grid(Figure4aa,Figure4bb, nrow = 2)
+ggsave("Figure4.jpg", w = 12, h = 8)
+
+
+##############################
 ####################################################################
 #############   Mean effect of AD         ##########################
 ####################################################################
@@ -1398,8 +1501,8 @@ GetModelResponses_Texture = air_drag %>%
       r == 0.12 & condsize == "Incongruent" ~ 0.09,
       r == 0.033 & condsize == "Congruent"   ~ 0.033,
       r == 0.12 & condsize == "Congruent" ~ 0.12),
-    m2 = case_when( #biased size percept
-      r == 0.033 & condsize == "Incongruent" ~ 0.2,
+    m2 = case_when( #biased mass percept
+      r == 0.033 & condsize == "Incongruent" ~ 0.1,
       r == 0.12 & condsize == "Incongruent" ~ 0.4,
       r == 0.033 & condsize == "Congruent"   ~ 0.06,
       r == 0.12 & condsize == "Congruent" ~ 0.6),
